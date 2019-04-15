@@ -1,0 +1,7 @@
+D:\C#Instance\LerningRenderPiplineWithSoftRender\SortRenderWithCSharp\SortRenderWithCSharp\bin\Debug\SortRenderWithCSharp.exe.config
+D:\C#Instance\LerningRenderPiplineWithSoftRender\SortRenderWithCSharp\SortRenderWithCSharp\bin\Debug\SortRenderWithCSharp.exe
+D:\C#Instance\LerningRenderPiplineWithSoftRender\SortRenderWithCSharp\SortRenderWithCSharp\bin\Debug\SortRenderWithCSharp.pdb
+D:\C#Instance\LerningRenderPiplineWithSoftRender\SortRenderWithCSharp\SortRenderWithCSharp\obj\Debug\SortRenderWithCSharp.csprojResolveAssemblyReference.cache
+D:\C#Instance\LerningRenderPiplineWithSoftRender\SortRenderWithCSharp\SortRenderWithCSharp\obj\Debug\SortRenderWithCSharp.csproj.CoreCompileInputs.cache
+D:\C#Instance\LerningRenderPiplineWithSoftRender\SortRenderWithCSharp\SortRenderWithCSharp\obj\Debug\SortRenderWithCSharp.exe
+D:\C#Instance\LerningRenderPiplineWithSoftRender\SortRenderWithCSharp\SortRenderWithCSharp\obj\Debug\SortRenderWithCSharp.pdb
