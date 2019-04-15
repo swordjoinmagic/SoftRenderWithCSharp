@@ -42,7 +42,6 @@ public class SoftRenderForm : Form {
 
         texture2D = new Bitmap("D:\\preview.bmp");
 
-
         StartRender();
     }
 
@@ -145,16 +144,23 @@ public class SoftRenderForm : Form {
             // 顶点1/2/3
             Vector3 v1 = new Vector3(0, 0, 0);
             Vector3 v2 = new Vector3(0, 2 * 0.2f, 0);
-            Vector3 v3 = new Vector3(2 * 0.2f, 0, 0);
+            Vector3 v3 = new Vector3(2 * 0.2f, 0, 0);            
+            Vector3 v4 = new Vector3(2 * 0.2f, 2 * 0.2f, 0);
 
             Vertex vertex1 = new Vertex(v1, new Color01(1, 0, 0, 1), 0, 0);
             Vertex vertex2 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);
             Vertex vertex3 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
+            Vertex vertex4 = new Vertex(v4, new Color01(0, 0, 1, 1), 1, 1);
+            Vertex vertex22 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);
+            Vertex vertex33 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
+
+            Vertex[] vertices = new Vertex[] { vertex1,vertex2,vertex3,vertex22,vertex4,vertex33 };
+            int[] triangle = new int[] {0,1,2,3,4,5};
 
             // 坐标/旋转与缩放
             angel = (angel + 1) % 720;
             Vector3 rotation = new Vector3(angel, 0, 0);
-            Vector3 scale = new Vector3(2, 2, 2);
+            Vector3 scale = new Vector3(1, 1, 1);
             Vector3 worldPosition = new Vector3(0, 0, 0);
 
 
@@ -181,8 +187,9 @@ public class SoftRenderForm : Form {
             // 构建MVP矩阵
             Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
-            DrawPrimitive(vertex1,vertex2,vertex3,MVPMatrix);
+            //DrawPrimitive(vertex1,vertex2,vertex3,MVPMatrix);
             //DrawTriangle(100, 100, 400, 0, 300, 300, Color.White);
+            DrawElement(vertices,triangle,MVPMatrix);
 
             #endregion
 
@@ -1008,6 +1015,27 @@ public class SoftRenderForm : Form {
         //    (int)v3.pos.X, (int)v3.pos.Y,
         //    Color.White
         //    );
+    }
+
+    /// <summary>
+    /// 	根据传递的Vertex数组和triangleIndex数组来绘制3D图形
+    /// 		triangleIndex表示顶点的顺序，triangleIndex[1] = 1，
+    /// 		表示第二个顶点是Vertex数组的第二个元素
+    /// 		绘制的规则是，
+    /// 		每三个成一个三角形进行绘制
+    /// </summary>
+    /// <param name="vertices"></param>
+    /// <param name="triangle"></param>
+    /// <param name="mvp"></param>
+    public void DrawElement(Vertex[] vertices,int[] triangle,Matrix4x4 mvp) {
+        if (triangle.Length % 3 != 0) return;
+        for (int i=0;i<triangle.Length;i+=3) {
+            Vertex v1 = vertices[triangle[i]];
+            Vertex v2 = vertices[triangle[i+1]];
+            Vertex v3 = vertices[triangle[i + 2]];
+
+            DrawPrimitive(v1,v2,v3,mvp);
+        }
     }
     #endregion
 }

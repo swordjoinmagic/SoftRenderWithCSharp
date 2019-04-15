@@ -99,10 +99,10 @@ namespace SortRenderWithCSharp {
         // 将Color类转化为Color01类
         public static Color01 FromColor(Color color) {
             return new Color01(
-                r:color.R/255,
-                g:color.G/255,
-                b:color.B/255,
-                a:color.A/255
+                r: (float)color.R/byte.MaxValue,
+                g: (float)color.G/ byte.MaxValue,
+                b: (float)color.B/ byte.MaxValue,
+                a: (float)color.A/ byte.MaxValue
                 );
         }
 

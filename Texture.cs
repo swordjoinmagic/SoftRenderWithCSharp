@@ -18,10 +18,21 @@ namespace SortRenderWithCSharp {
         /// <param name="v"></param>
         /// <returns></returns>
         public static Color01 Tex2D(Bitmap texture2D,float u,float v) {
-            int width = (int)(u * texture2D.Width);
-            int height = (int)(v * texture2D.Height);
-            Color color = texture2D.GetPixel(width,height);
-            return Color01.FromColor(color);
+
+            // 采用Clamp模式，直接对uv进行截断
+            u = MathF.Clamp01(u);
+            v = MathF.Clamp01(v);
+
+            int tx = (int)(u * (texture2D.Width-1));
+            int ty = (int)(v * (texture2D.Height-1));
+
+            tx = MathF.Clamp(tx,0,texture2D.Width);
+            ty = MathF.Clamp(ty, 0, texture2D.Height);
+
+            Color color = texture2D.GetPixel(tx,ty);
+
+            Color01 color01 = Color01.FromColor(color);
+            return color01;
         }
     }
 }
