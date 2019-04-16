@@ -79,6 +79,11 @@ public class SoftRenderForm : Form {
         //texture2D = new Bitmap("D:\\UnityInstance\\Shader Collection\\Assets\\Textures\\Chapter7\\Grid.png");
         texture2D = new Bitmap("C:\\Users\\Administrator\\Desktop\\29126173.bmp");
 
+        // 读取法线贴图
+        normalTexture = new Bitmap("C:\\Users\\Administrator\\Desktop\\distorition1.bmp");
+
+        // 读取OBJ文件
+        OBJLoader.LoadOBJ("D:\\C#Instance\\LerningRenderPiplineWithSoftRender\\SortRenderWithCSharp\\SortRenderWithCSharp\\cubea.obj");
 
         StartRender();
     }
@@ -229,8 +234,8 @@ public class SoftRenderForm : Form {
 
         // 坐标/旋转与缩放
         angel = (angel + 1) % 720;
-        Vector3 rotation = new Vector3(0, angel, 0);
-        Vector3 scale = new Vector3(1, 1, 1);
+        Vector3 rotation = new Vector3(0, 84, 0);
+        Vector3 scale = new Vector3(6, 1, 1);
         Vector3 worldPosition = new Vector3(0, 0, 0);
 
 
@@ -1245,44 +1250,44 @@ public class SoftRenderForm : Form {
         Vertex vertex33 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
 
         // 右侧面
-        Vertex leftup_Right = new Vertex(v4, Color01.White, 0,1);
-        Vertex leftdown_Right = new Vertex(v3,Color01.White,0,0);
-        Vertex rightdown_Right = new Vertex(v6,Color01.White,1,0);
-        Vertex rightup_Right = new Vertex(v5,Color01.White,1,1);
-        Vertex leftup2_Right = new Vertex(v4, Color01.White, 0, 1);
-        Vertex rightdown2_Right = new Vertex(v6, Color01.White, 1, 0);
+        Vertex leftup_Right = new Vertex(v4, new Color01(1, 0, 0, 1), 0,1);
+        Vertex leftdown_Right = new Vertex(v3, new Color01(0, 1, 0, 1), 0,0);
+        Vertex rightdown_Right = new Vertex(v6, new Color01(0, 0, 1, 1), 1,0);
+        Vertex rightup_Right = new Vertex(v5, new Color01(0, 0, 1, 1), 1,1);
+        Vertex leftup2_Right = new Vertex(v4, new Color01(0, 1, 0, 1), 0, 1);
+        Vertex rightdown2_Right = new Vertex(v6, new Color01(0, 0, 1, 1), 1, 0);
 
         // 左侧面
-        Vertex leftup_Left = new Vertex(v9, Color01.White, 0, 1);
-        Vertex leftdown_Left = new Vertex(v7, Color01.White, 0, 0);
-        Vertex rightdown_Left = new Vertex(v8, Color01.White, 1, 0);
-        Vertex rightup_Left = new Vertex(v10, Color01.White, 1, 1);
-        Vertex leftup2_Left = new Vertex(v9, Color01.White, 0, 1);
-        Vertex rightdown2_Left = new Vertex(v8, Color01.White, 1, 0);
+        Vertex leftup_Left = new Vertex(v9, new Color01(1, 0, 0, 1), 0, 1);
+        Vertex leftdown_Left = new Vertex(v7, new Color01(0, 1, 0, 1), 0, 0);
+        Vertex rightdown_Left = new Vertex(v8, new Color01(0, 0, 1, 1), 1, 0);
+        Vertex rightup_Left = new Vertex(v10, new Color01(0, 0, 1, 1), 1, 1);
+        Vertex leftup2_Left = new Vertex(v9, new Color01(0, 1, 0, 1), 0, 1);
+        Vertex rightdown2_Left = new Vertex(v8, new Color01(0, 0, 1, 1), 1, 0);
 
         // 背面
-        Vertex leftup_Back = new Vertex(v12, Color01.White, 0, 1);
-        Vertex leftdown_Back = new Vertex(v11, Color01.White, 0, 0);
-        Vertex rightdown_Back = new Vertex(v13, Color01.White, 1, 0);
-        Vertex rightup_Back = new Vertex(v14, Color01.White, 1, 1);
-        Vertex leftup2_Back = new Vertex(v12, Color01.White, 0, 1);
-        Vertex rightdown2_Back = new Vertex(v13, Color01.White, 1, 0);
+        Vertex leftup_Back = new Vertex(v12, new Color01(1, 0, 0, 1), 0, 1);
+        Vertex leftdown_Back = new Vertex(v11, new Color01(0, 1, 0, 1), 0, 0);
+        Vertex rightdown_Back = new Vertex(v13, new Color01(0, 0, 1, 1), 1, 0);
+        Vertex rightup_Back = new Vertex(v14, new Color01(0, 0, 1, 1), 1, 1);
+        Vertex leftup2_Back = new Vertex(v12, new Color01(0, 1, 0, 1), 0, 1);
+        Vertex rightdown2_Back = new Vertex(v13, new Color01(0, 0, 1, 1), 1, 0);
 
         // 上面
-        Vertex leftup_Up = new Vertex(v17, Color01.White, 0, 1);
-        Vertex leftdown_Up = new Vertex(v15, Color01.White, 0, 0);
-        Vertex rightdown_Up = new Vertex(v16, Color01.White, 1, 0);
-        Vertex rightup_Up = new Vertex(v18, Color01.White, 1, 1);
-        Vertex leftup2_Up = new Vertex(v17, Color01.White, 0, 1);
-        Vertex rightdown2_Up = new Vertex(v16, Color01.White, 1, 0);
+        Vertex leftup_Up = new Vertex(v17, new Color01(1, 0, 0, 1), 0, 1);
+        Vertex leftdown_Up = new Vertex(v15, new Color01(0, 1, 0, 1), 0, 0);
+        Vertex rightdown_Up = new Vertex(v16, new Color01(0, 0, 1, 1), 1, 0);
+        Vertex rightup_Up = new Vertex(v18, new Color01(0, 0, 1, 1), 1, 1);
+        Vertex leftup2_Up = new Vertex(v17, new Color01(0, 1, 0, 1), 0, 1);
+        Vertex rightdown2_Up = new Vertex(v16, new Color01(0, 0, 1, 1), 1, 0);
 
         // 下面
-        Vertex leftup_Down = new Vertex(v20, Color01.White, 0, 1);
-        Vertex leftdown_Down = new Vertex(v19, Color01.White, 0, 0);
-        Vertex rightdown_Down = new Vertex(v21, Color01.White, 1, 0);
-        Vertex rightup_Down = new Vertex(v22, Color01.White, 1, 1);
-        Vertex leftup2_Down = new Vertex(v20, Color01.White, 0, 1);
-        Vertex rightdown2_Down = new Vertex(v21, Color01.White, 1, 0);
+        Vertex leftup_Down = new Vertex(v20, new Color01(1, 0, 0, 1), 0, 1);
+        Vertex leftdown_Down = new Vertex(v19, new Color01(0, 1, 0, 1), 0, 0);
+        Vertex rightdown_Down = new Vertex(v21, new Color01(0, 0, 1, 1), 1, 0);
+        Vertex rightup_Down = new Vertex(v22, new Color01(0, 0, 1, 1), 1, 1);
+        Vertex leftup2_Down = new Vertex(v20, new Color01(0, 1, 0, 1), 0, 1);
+        Vertex rightdown2_Down = new Vertex(v21, new Color01(0, 0, 1, 1), 1, 0);
 
         Vertex[] vertices = new Vertex[] {
             // 正面
@@ -1437,8 +1442,8 @@ public class SoftRenderForm : Form {
         worldNormal.Normlize();       
 
         // 根据平行光方向及当前法线方向，
-        // 计算当前像素的辐照度(使用半兰伯特光照模型)
-        float radiance = 0.5f*(Vector3.Dot(worldNormal, DirectionLight)) + 0.5f;
+        // 计算当前像素的辐照度
+        float radiance = Math.Max(0,Vector3.Dot(worldNormal, DirectionLight));
         // 获得贴图颜色
         Color01 albedo = Texture.Tex2D(texture2D,vertex.u,vertex.v);
 
@@ -1462,7 +1467,7 @@ public class SoftRenderForm : Form {
         // 计算漫反射光照
         Color01 diffuse = albedo * radiance * lightColor;
 
-        Color01 finalColor = specular + diffuse;
+        Color01 finalColor = diffuse + specular;
         finalColor.A = 1;
 
         return finalColor;

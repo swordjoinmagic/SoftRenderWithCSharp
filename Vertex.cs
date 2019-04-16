@@ -29,6 +29,8 @@ namespace SortRenderWithCSharp {
         public Color01 color;
         // 顶点法线
         public Vector3 normal;
+        // 顶点切线
+        public Vector3 tangent;
 
         public Vertex() : this(Vector3.Zero, Color01.White,0,0) { }
 
