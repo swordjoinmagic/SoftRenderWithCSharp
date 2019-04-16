@@ -88,6 +88,13 @@ namespace SortRenderWithCSharp {
             return result;
         }
 
+        public static Vector3 operator -(Vector3 vector3) {
+            return new Vector3(
+                -vector3.x,
+                -vector3.y,
+                -vector3.z
+                );
+        }
 
         /// <summary>
         /// 向量点乘
@@ -141,6 +148,9 @@ namespace SortRenderWithCSharp {
             z /= magnitude;
         }
 
+        public static Vector3 LerpVector3(Vector3 left,Vector3 right,float t) {
+            return left + (right - left) * t;
+        }
 
         public override string ToString() {
             return string.Format("({0},{1},{2})",x,y,z);

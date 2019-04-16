@@ -10,11 +10,22 @@ namespace SortRenderWithCSharp {
     /// 顶点对象
     /// </summary>
     public class Vertex {
+        #region 顶点的MVP矩阵，原则上来说，顶点不应该有这个属性，但是这里为了计算方便，每个顶点都有引用一份它的MVP矩阵，方便光照计算
+
+        // 记录MVP矩阵的三个引用，这里记录的都是引用，所以不会特别消耗内存
+        public Matrix4x4 mMatrix;
+        public Matrix4x4 vMatrix;
+        public Matrix4x4 pMatrix;
+
+        #endregion
+
         public Vector3 pos;
         // 该顶点对应的uv值
         public float u, v;
         // 顶点颜色
         public Color01 color;
+        // 顶点法线
+        public Vector3 normal;
 
         public Vertex() : this(Vector3.Zero, Color01.White,0,0) { }
 
@@ -38,11 +49,21 @@ namespace SortRenderWithCSharp {
             result.u = MathF.LerpFloat(left.u,right.u,t);
             result.v = MathF.LerpFloat(left.v, right.v,t);
 
+            // 对法线进行插值
+            result.normal = Vector3.LerpVector3(left.normal,right.normal,t);
+
+
+            // MVP矩阵
+            result.mMatrix = left.mMatrix;
+            result.vMatrix = left.vMatrix;
+            result.pMatrix = left.pMatrix;
+
             return result;
         }
 
         public override string ToString() {
             return string.Format("({0},{1},{2},{3})",pos.X,pos.Y,pos.Z,pos.W);
         }
+
     }
 }

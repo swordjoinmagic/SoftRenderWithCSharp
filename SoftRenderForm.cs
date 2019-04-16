@@ -27,8 +27,18 @@ public class SoftRenderForm : Form {
     // 是否开启深度测试(默认为否)
     bool IsZTest;
 
+    // 是否开启计算颜色的函数
+    bool fragmentShaderOn;
+
+    // 是否开启光照渲染（同时也决定了是否对顶点的法线进行计算）
+    bool LightingOn;
+    // 平行光光源的方向，这里将默认方向设为从摄像机观察方向指向摄像机
+    Vector3 DirectionLight;
+    Color01 lightColor = Color01.White; // 平行光颜色
+
     // 屏幕宽高度（同时也作分辨率使用）
-    private int screenHeight = 500, screenWidth = 500;
+    private int screenHeight = 500, screenWidth = 500;    
+
 
     private long lastUpdateTime;
 
@@ -55,6 +65,12 @@ public class SoftRenderForm : Form {
         IsZTest = true;
         // 开启深度写入
         IsZWritting = true;
+
+        // 开启光照渲染
+        LightingOn = true;
+
+        // 开启逐像素计算
+        fragmentShaderOn = true;
 
         // 读取贴图
         //texture2D = new Bitmap("D:\\UnityInstance\\Shader Collection\\Assets\\Textures\\Chapter7\\Grid.png");
@@ -211,12 +227,12 @@ public class SoftRenderForm : Form {
         // 坐标/旋转与缩放
         angel = (angel + 1) % 720;
         Vector3 rotation = new Vector3(0, angel, 0);
-        Vector3 scale = new Vector3(5, 2, 2);
+        Vector3 scale = new Vector3(1, 1, 1);
         Vector3 worldPosition = new Vector3(0, 0, 0);
 
 
         // 摄像机各参数
-        Vector3 cameraPostion = new Vector3(cameraPositionX, cameraPositionY, -5);        // 摄像机位置
+        Vector3 cameraPostion = new Vector3(cameraPositionX, cameraPositionY, -3);        // 摄像机位置
         Vector3 targetPosition = new Vector3(0, 0, 0);        // 摄像机观察位置
         Vector3 cameraUpDir = new Vector3(0, 1, 0);           // 摄像机向上的向量(粗略的)
         int Near = 1;       // 距离近裁剪平面距离
@@ -238,8 +254,19 @@ public class SoftRenderForm : Form {
         // 构建MVP矩阵
         Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
-        //DrawPrimitive(vertex1,vertex2,vertex3,MVPMatrix);
-        //DrawTriangle(100, 100, 400, 0, 300, 300, Color.White);
+        if (LightingOn) {
+            // 初始化法线
+            CalculateVerticsNormal(vertices, triangle);
+
+            // 给每个顶点引用一份MVP矩阵
+            foreach (Vertex v in vertices) {
+                v.mMatrix = modelMatrix;
+                v.vMatrix = viewMatrix;
+                v.pMatrix = projectionMatrix;
+            }
+
+        }
+
         DrawElement(vertices, triangle, MVPMatrix);
     }
 
@@ -555,29 +582,63 @@ public class SoftRenderForm : Form {
             // 当x轴距离差更大时,将x作为自增变量
             for (int x = x1; x != x2; x += stepX) {
 
-                float t = (float)(x - x1) / (float)(x2 - x1);
+                float t = (float)(x - x1) / (float)(x2 - x1);      
+                
+                #region 测试
+                //float z = MathF.LerpFloat(v1.pos.Z, v2.pos.Z, t);
 
-                float z = MathF.LerpFloat(v1.pos.Z, v2.pos.Z, t);
+                //// 对当前像素进行深度测试
+                //if (IsZTest)
+                //    if (!ZTest(x, y, z)) continue;
+
+                //float u = MathF.LerpFloat(v1.u, v2.u, t);
+                //float v = MathF.LerpFloat(v1.v, v2.v, t);
+
+                //// 透视插值矫正
+                //float realZ = 1.0f / z;
+                //u = u * realZ;
+                //v = v * realZ;
+
+                //// 对顶点颜色进行插值
+                //Color01 color = Color01.LerpColor(v1.color, v2.color, t);
+
+                //// 对纹理贴图进行采样
+                //Color01 textureColor = Texture.Tex2D(texture2D, u, v);
+
+                //DrawPixel(x, y, textureColor);
+                #endregion
+
+                // 当前顶点
+                Vertex vertex = Vertex.LerpVertexData(v1, v2, t);
+                vertex.pos.X = x;
+                vertex.pos.Y = y;
+
+                float z = vertex.pos.Z;
 
                 // 对当前像素进行深度测试
-                if(IsZTest)
+                if (IsZTest)
                     if (!ZTest(x, y, z)) continue;
-
-                float u = MathF.LerpFloat(v1.u,v2.u,t);
-                float v = MathF.LerpFloat(v1.v,v2.v,t);
 
                 // 透视插值矫正
                 float realZ = 1.0f / z;
-                u = u * realZ;
-                v = v * realZ;
+                vertex.u *= realZ;      // 变回原来的u
+                vertex.v *= realZ;      // 变回原来的v
+
+                float u = vertex.u;
+                float v = vertex.v;
 
                 // 对顶点颜色进行插值
-                Color01 color = Color01.LerpColor(v1.color,v2.color,t);    
-                
-                // 对纹理贴图进行采样
-                Color01 textureColor = Texture.Tex2D(texture2D,u,v);
+                Color01 color = Color01.LerpColor(v1.color, v2.color, t);
 
-                DrawPixel(x, y, textureColor);
+                // 对纹理贴图进行采样
+                Color01 textureColor = Texture.Tex2D(texture2D, u, v);
+
+                Color01 finalColor = textureColor;
+
+                if (fragmentShaderOn)
+                    DrawPixel(x, y, FragmentShader(vertex));
+                else
+                    DrawPixel(x, y, finalColor);
 
                 // 增量误差
                 eps += dy;
@@ -1233,6 +1294,33 @@ public class SoftRenderForm : Form {
             // 下面
             leftdown_Down,leftup_Down,rightdown_Down,leftup2_Down,rightup_Down,rightdown2_Down,
         };
+        // 指向屏幕外
+        Vector3 forwardV = new Vector3(0,0,1);
+        // 指向屏幕内
+        Vector3 backV = new Vector3(0,0,-1);
+        // 指向左边
+        Vector3 leftV = new Vector3(-1,0,0);
+        // 指向右边
+        Vector3 rightV = new Vector3(1,0,0);
+        // 指向上
+        Vector3 upV = new Vector3(0,1,0);
+        // 指向下
+        Vector3 downV = new Vector3(0,-1,0);
+
+        Vector3[] normals = new Vector3[] {
+            // 正面
+            forwardV,forwardV,forwardV,forwardV,forwardV,forwardV,
+            // 右侧面
+            rightV,rightV,rightV,rightV,rightV,rightV,
+            // 左侧面
+            leftV,leftV,leftV,leftV,leftV,leftV,
+            // 背面
+            backV,backV,backV,backV,backV,backV,
+            // 上面
+            upV,upV,upV,upV,upV,upV,
+            // 下面
+            downV,downV,downV,downV,downV,downV
+        };
         int[] triangle = new int[] {
             0, 1, 2,
             3, 4, 5,
@@ -1250,7 +1338,7 @@ public class SoftRenderForm : Form {
 
         // 坐标/旋转与缩放
         angel = (angel + 1) % 720;
-        Vector3 rotation = new Vector3(angel, angel, 0);
+        Vector3 rotation = new Vector3(angel, angel, angel);
         Vector3 scale = new Vector3(1, 1, 1);
         Vector3 worldPosition = new Vector3(0, 0, 0);
 
@@ -1267,6 +1355,10 @@ public class SoftRenderForm : Form {
         int left = -1;      // 近平面距离左边的距离
         int angle = 30;     // 摄像机的FOV角度
 
+        // 初始化光源方向(默认为 观察中心点指向摄像机的方向 )
+        //DirectionLight =  targetPosition - cameraPostion;
+        // 从左上往右下照
+        DirectionLight = (targetPosition - cameraPostion) + new Vector3(0,1,0);
 
         // 构建M矩阵
         Matrix4x4 modelMatrix = GetModelMatrix(worldPosition, rotation, scale);
@@ -1278,8 +1370,81 @@ public class SoftRenderForm : Form {
         // 构建MVP矩阵
         Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
+        if (LightingOn) {
+            // 初始化平行光颜色
+            lightColor = new Color01(1,0.5f,0.5f, 1);
+
+            // 给每个顶点引用一份MVP矩阵
+            foreach (int i in triangle) {
+                Vertex v = vertices[triangle[i]];
+                v.normal = normals[i];
+                v.mMatrix = modelMatrix;
+                v.vMatrix = viewMatrix;
+                v.pMatrix = projectionMatrix;
+            }
+
+        }
+
         DrawElement(vertices, triangle, MVPMatrix);
     }
+
+    /// <summary>
+    /// 计算顶点数组中所有顶点的法线方向（正方向）
+    /// 
+    /// 计算方法是：
+    ///     计算一个三角形图元内，该顶点指向另外两个顶点的向量的叉积，即为该顶点的法线正方向
+    /// </summary>
+    /// <param name="vertices"></param>
+    /// <param name="triangle"></param>
+    /// <returns></returns>
+    public void CalculateVerticsNormal(Vertex[] vertices,int[] triangle) {
+        // 凑不成一系列三角形图元就退出
+        if (triangle.Length%3!=0) return ;
+
+        for (int i=0;i<triangle.Length;i+=3) {
+            Vertex v1 = vertices[triangle[i]];
+            Vertex v2 = vertices[triangle[i+1]];
+            Vertex v3 = vertices[triangle[i+2]];
+
+            Vector3 normal = Vector3.Cross((v2.pos - v1.pos), (v3.pos - v1.pos));
+            normal.Normlize();
+
+            // 计算顶点v1的法线
+            v1.normal = normal;
+            // 计算v2的法线
+            v2.normal = normal;
+            // 计算v3的法线
+            v3.normal = normal;
+        }
+        
+    }
+
+    /// <summary>
+    /// 山寨版片元着色器，
+    /// 根据一个顶点的各属性，计算当前顶点（屏幕空间下）的像素的颜色
+    /// </summary>
+    /// <param name="vertex"></param>
+    /// <returns></returns>
+    public Color01 FragmentShader(Vertex vertex) {
+
+        // 将顶点的法线变换到世界空间下，对于一个只包含旋转变换的变换矩阵，他是正交矩阵
+        // 使用m矩阵变换法线(仅适用于只发生旋转的物体)
+        Vector3 worldNormal = vertex.mMatrix * vertex.normal;
+        worldNormal.Normlize();
+
+        // 根据平行光方向及当前法线方向，
+        // 计算当前像素的辐照度
+        float radiance = MathF.Clamp01(Vector3.Dot(worldNormal, DirectionLight));
+
+        // 获得贴图颜色
+        Color01 albedo = Texture.Tex2D(texture2D,vertex.u,vertex.v);
+
+        Color01 finalColor = albedo * radiance * lightColor;
+        finalColor.A = 1;
+
+        return finalColor;
+    }
+    
 
     #endregion
 }
