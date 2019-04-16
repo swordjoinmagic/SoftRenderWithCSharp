@@ -17,6 +17,9 @@ public class SoftRenderForm : Form {
     // 用于贴在图元上的2D贴图
     Bitmap texture2D;
 
+    // 法线贴图
+    Bitmap normalTexture;
+
     // 前置缓冲区（也就是当前显示的部分）
     Graphics g;
 
@@ -1197,6 +1200,7 @@ public class SoftRenderForm : Form {
 
     #region 绘制更多图元
 
+    public Vector3 cameraPostion;
     /// <summary>
     /// 绘制立方体
     /// </summary>
@@ -1344,7 +1348,7 @@ public class SoftRenderForm : Form {
 
 
         // 摄像机各参数
-        Vector3 cameraPostion = new Vector3(cameraPositionX, cameraPositionY, cameraPositionZ);        // 摄像机位置
+        cameraPostion = new Vector3(cameraPositionX, cameraPositionY, cameraPositionZ);        // 摄像机位置
         Vector3 targetPosition = new Vector3(0, 0, 0);        // 摄像机观察位置
         Vector3 cameraUpDir = new Vector3(0, 1, 0);           // 摄像机向上的向量(粗略的)
         int Near = 1;       // 距离近裁剪平面距离
@@ -1358,7 +1362,7 @@ public class SoftRenderForm : Form {
         // 初始化光源方向(默认为 观察中心点指向摄像机的方向 )
         //DirectionLight =  targetPosition - cameraPostion;
         // 从左上往右下照
-        DirectionLight = (targetPosition - cameraPostion) + new Vector3(0,1,0);
+        DirectionLight = (targetPosition - cameraPostion) + new Vector3(0,2,0);
 
         // 构建M矩阵
         Matrix4x4 modelMatrix = GetModelMatrix(worldPosition, rotation, scale);
@@ -1372,7 +1376,7 @@ public class SoftRenderForm : Form {
 
         if (LightingOn) {
             // 初始化平行光颜色
-            lightColor = new Color01(1,0.5f,0.5f, 1);
+            //lightColor = new Color01(1,0.5f,0.5f, 1);
 
             // 给每个顶点引用一份MVP矩阵
             foreach (int i in triangle) {
@@ -1430,16 +1434,35 @@ public class SoftRenderForm : Form {
         // 将顶点的法线变换到世界空间下，对于一个只包含旋转变换的变换矩阵，他是正交矩阵
         // 使用m矩阵变换法线(仅适用于只发生旋转的物体)
         Vector3 worldNormal = vertex.mMatrix * vertex.normal;
-        worldNormal.Normlize();
+        worldNormal.Normlize();       
 
         // 根据平行光方向及当前法线方向，
-        // 计算当前像素的辐照度
-        float radiance = MathF.Clamp01(Vector3.Dot(worldNormal, DirectionLight));
-
+        // 计算当前像素的辐照度(使用半兰伯特光照模型)
+        float radiance = 0.5f*(Vector3.Dot(worldNormal, DirectionLight)) + 0.5f;
         // 获得贴图颜色
         Color01 albedo = Texture.Tex2D(texture2D,vertex.u,vertex.v);
 
-        Color01 finalColor = albedo * radiance * lightColor;
+        // 使用Blinn-Phong模型计算高光反射
+
+        // 获得顶点当前所在世界坐标
+        Vector3 worldPos = vertex.mMatrix * vertex.modelSpacePos;
+
+        // 获得世界坐标下的视角方向
+        Vector3 worldViewDir = cameraPostion - worldPos;
+
+        // 计算half向量
+        Vector3 h = (worldViewDir + DirectionLight);
+        h.Normlize();
+
+        // 光泽度
+        float gloss = 20f;
+
+        // 计算高光反射
+        Color01 specular = lightColor * (float)Math.Pow(Math.Max(0,Vector3.Dot(h,worldNormal)),gloss);
+        // 计算漫反射光照
+        Color01 diffuse = albedo * radiance * lightColor;
+
+        Color01 finalColor = specular + diffuse;
         finalColor.A = 1;
 
         return finalColor;

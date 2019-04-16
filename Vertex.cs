@@ -19,6 +19,9 @@ namespace SortRenderWithCSharp {
 
         #endregion
 
+        // 模型空间下的坐标
+        public Vector3 modelSpacePos;
+        // 初始时是模型空间下的坐标，经过屏幕映射后，变为屏幕空间下的坐标
         public Vector3 pos;
         // 该顶点对应的uv值
         public float u, v;
@@ -34,6 +37,9 @@ namespace SortRenderWithCSharp {
             this.color = c;
             this.u = u;
             this.v = v;
+
+            // 一并初始化
+            this.modelSpacePos = pos;
         }
 
         // 顶点数据差值
