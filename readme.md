@@ -36,7 +36,11 @@
 
 ![Avater](readmeImage/未开启透视矫正插值.png) ![Avater](readmeImage/开启透视矫正插值.png)
 
+
 可以明显感觉到未开启透视矫正插值时,uv的插值是错误的,因为方方正正的贴图贴进去之后角度变得倾斜了.
 
 6.开启漫反射与高光反射
+
 ![Avater](readmeImage/漫反射光照.gif)
+
+## 一些额外的吐槽
