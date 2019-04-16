@@ -20,6 +20,13 @@ public class SoftRenderForm : Form {
     // 前置缓冲区（也就是当前显示的部分）
     Graphics g;
 
+    // 深度缓冲区
+    float[,] ZBuffer;
+    // 是否开启深度写入(默认为否)
+    bool IsZWritting;
+    // 是否开启深度测试(默认为否)
+    bool IsZTest;
+
     // 屏幕宽高度（同时也作分辨率使用）
     private int screenHeight = 500, screenWidth = 500;
 
@@ -40,7 +47,19 @@ public class SoftRenderForm : Form {
         screenBuffer = new Bitmap(screenWidth, screenHeight);
         screenBufferGraphics = Graphics.FromImage(screenBuffer);
 
-        texture2D = new Bitmap("D:\\UnityInstance\\Shader Collection\\Assets\\Textures\\Chapter7\\Grid.png");
+        // 初始化深度缓冲区
+        ZBuffer = new float[screenWidth+1,screenHeight+1];
+
+
+        // 开启深度测试
+        IsZTest = true;
+        // 开启深度写入
+        IsZWritting = true;
+
+        // 读取贴图
+        //texture2D = new Bitmap("D:\\UnityInstance\\Shader Collection\\Assets\\Textures\\Chapter7\\Grid.png");
+        texture2D = new Bitmap("C:\\Users\\Administrator\\Desktop\\29126173.bmp");
+
 
         StartRender();
     }
@@ -63,7 +82,13 @@ public class SoftRenderForm : Form {
                 break;
             case Keys.Down:
                 cameraPositionY -= 0.01f;
-                break;                
+                break;
+            case Keys.Z:
+                cameraPositionZ += 0.01f;
+                break;
+            case Keys.X:
+                cameraPositionZ -= 0.01f;
+                break;
         }
     }
 
@@ -76,7 +101,12 @@ public class SoftRenderForm : Form {
     /// 清除后备缓冲区
     /// </summary>
     private void ClearScreenBuffer() {
+
+        // 清除颜色缓冲区
         screenBufferGraphics.Clear(System.Drawing.Color.Black);
+
+        // 清除深度缓冲区
+        Array.Clear(ZBuffer,0,ZBuffer.Length);
     }
 
     /// <summary>
@@ -135,7 +165,7 @@ public class SoftRenderForm : Form {
     int angel = 0;
     float cameraPositionX = 0;
     float cameraPositionY = 0;
-    float cameraPositionZ = 0;
+    float cameraPositionZ = -5;
     // 每一帧渲染图形的方法
     public void Render(object sender, System.Timers.ElapsedEventArgs args) {
 
@@ -528,6 +558,10 @@ public class SoftRenderForm : Form {
                 float t = (float)(x - x1) / (float)(x2 - x1);
 
                 float z = MathF.LerpFloat(v1.pos.Z, v2.pos.Z, t);
+
+                // 对当前像素进行深度测试
+                if(IsZTest)
+                    if (!ZTest(x, y, z)) continue;
 
                 float u = MathF.LerpFloat(v1.u,v2.u,t);
                 float v = MathF.LerpFloat(v1.v,v2.v,t);
@@ -1002,16 +1036,16 @@ public class SoftRenderForm : Form {
         // 将x坐标映射到屏幕上
         vertex.pos.X = (vertex.pos.X * 0.5f + 0.5f) * screenWidth;
         // 将y坐标映射到屏幕上
-        vertex.pos.Y = (vertex.pos.Y * 0.5f + 0.5f) * screenHeight;
-
-        // 此时可以将Z坐标存入深度缓冲中
-
+        vertex.pos.Y = (vertex.pos.Y * 0.5f + 0.5f) * screenHeight;        
 
         // 透视插值矫正,这里将顶点的uv值乘于1/z,
         // 这样在光栅化的时候插值就是均匀的
         vertex.pos.Z = 1.0f / vertex.pos.W;
         vertex.u *= vertex.pos.Z;
         vertex.v *= vertex.pos.Z;
+
+        // 此时可以将Z坐标存入深度缓冲中
+        //ZBuffer[(int)vertex.pos.X, (int)vertex.pos.Y] = vertex.pos.Z;
     }
 
 
@@ -1069,6 +1103,37 @@ public class SoftRenderForm : Form {
     }
     #endregion
 
+    #region 深度写入/深度测试
+
+    /// <summary>
+    /// 对一个像素点开启深度测试,如果通过深度测试,那么将该物体的深度写入深度缓冲区
+    /// 
+    /// 深度测试的方法如下:
+    /// 
+    ///     将该片元与深度缓冲区中当前片元的深度进行比较,
+    ///     如果要绘制的像素深度小于深度缓冲区同样位置的深度,那么绘制该像素,并将新的深度写入深度缓冲区
+    ///     如果要绘制的像素深度大于深度缓冲区同样位置的深度,那么不绘制该像素
+    ///     
+    ///     因为在屏幕映射时,将Z改为1/Z,所以上面的大小关系要进行翻转
+    /// </summary>
+    /// <param name="px"></param>
+    /// <param name="py"></param>
+    /// <param name="pz">当前要绘制的像素的深度</param>
+    /// <returns></returns>
+    public bool ZTest(int px,int py,float pz) {
+        // 如果要绘制的片元的深度小于深度缓冲区中的片元,就进行绘制,并进行深度写入
+        // PS:深度缓冲区中当前的深度是1/Z(这个Z是视角空间下的Z),所以大小关系反转
+        if (pz >= ZBuffer[px,py]) {
+            // 进行深度写入
+            if (IsZWritting)
+                ZBuffer[px, py] = pz;
+            return true;
+        }
+        return false;
+    }
+
+    #endregion
+
     #region 绘制更多图元
 
     /// <summary>
@@ -1076,23 +1141,35 @@ public class SoftRenderForm : Form {
     /// </summary>
     public void DrawCube() {
 
+        const float UNIT_SIZE = 0.2f;
+
         // 顶点1/2/3
         Vector3 v1 = new Vector3(0, 0, 0);
-        Vector3 v2 = new Vector3(0, 2 * 0.2f, 0);
-        Vector3 v3 = new Vector3(2 * 0.2f, 0, 0);
-        Vector3 v4 = new Vector3(2 * 0.2f, 2 * 0.2f, 0);
-        Vector3 v5 = new Vector3(2 * 0.2f, 2 * 0.2f, -2 * 0.2f);
-        Vector3 v6 = new Vector3(2 * 0.2f, 0, -2 * 0.2f);
+        Vector3 v2 = new Vector3(0, 2 * UNIT_SIZE, 0);
+        Vector3 v3 = new Vector3(2 * UNIT_SIZE, 0, 0);
+        Vector3 v4 = new Vector3(2 * UNIT_SIZE, 2 * UNIT_SIZE, 0);
+        Vector3 v5 = new Vector3(2 * UNIT_SIZE, 2 * UNIT_SIZE, -2 * UNIT_SIZE);
+        Vector3 v6 = new Vector3(2 * UNIT_SIZE, 0, -2 * UNIT_SIZE);
 
-        Vector3 v7 = new Vector3(0,0,-2*0.2f);
+        Vector3 v7 = new Vector3(0,0,-2*UNIT_SIZE);
         Vector3 v8 = new Vector3(0,0,0);
-        Vector3 v9 = new Vector3(0, 2*0.2f, -2 * 0.2f);
-        Vector3 v10 = new Vector3(0,2*0.2f,0);
+        Vector3 v9 = new Vector3(0, 2*UNIT_SIZE, -2 * UNIT_SIZE);
+        Vector3 v10 = new Vector3(0,2*UNIT_SIZE,0);
 
-        Vector3 v11 = new Vector3(0, 0, -2 * 0.2f);
-        Vector3 v12 = new Vector3(0, 2 * 0.2f, -2 * 0.2f);
-        Vector3 v13 = new Vector3(2 * 0.2f, 0, -2 * 0.2f);
-        Vector3 v14 = new Vector3(2 * 0.2f, 2 * 0.2f, -2 * 0.2f);
+        Vector3 v11 = new Vector3(0, 0, -2 * UNIT_SIZE);
+        Vector3 v12 = new Vector3(0, 2 * UNIT_SIZE, -2 * UNIT_SIZE);
+        Vector3 v13 = new Vector3(2 * UNIT_SIZE, 0, -2 * UNIT_SIZE);
+        Vector3 v14 = new Vector3(2 * UNIT_SIZE, 2 * UNIT_SIZE, -2 * UNIT_SIZE);
+
+        Vector3 v15 = new Vector3(0,2*UNIT_SIZE,0);
+        Vector3 v16 = new Vector3(2*UNIT_SIZE,2*UNIT_SIZE,0);
+        Vector3 v17 = new Vector3(0,2*UNIT_SIZE,-2*UNIT_SIZE);
+        Vector3 v18 = new Vector3(2*UNIT_SIZE,2*UNIT_SIZE,-2*UNIT_SIZE);
+
+        Vector3 v19 = new Vector3(0,0,0);   // 左下
+        Vector3 v20 = new Vector3(0,0,-2*UNIT_SIZE);    // 左上
+        Vector3 v21 = new Vector3(2*UNIT_SIZE,0,0);     // 右下
+        Vector3 v22 = new Vector3(2 * UNIT_SIZE, 0, -2 * UNIT_SIZE);    // 右上
 
         // 正面
         Vertex vertex1 = new Vertex(v1, new Color01(1, 0, 0, 1), 0, 0);
@@ -1126,6 +1203,22 @@ public class SoftRenderForm : Form {
         Vertex leftup2_Back = new Vertex(v12, Color01.White, 0, 1);
         Vertex rightdown2_Back = new Vertex(v13, Color01.White, 1, 0);
 
+        // 上面
+        Vertex leftup_Up = new Vertex(v17, Color01.White, 0, 1);
+        Vertex leftdown_Up = new Vertex(v15, Color01.White, 0, 0);
+        Vertex rightdown_Up = new Vertex(v16, Color01.White, 1, 0);
+        Vertex rightup_Up = new Vertex(v18, Color01.White, 1, 1);
+        Vertex leftup2_Up = new Vertex(v17, Color01.White, 0, 1);
+        Vertex rightdown2_Up = new Vertex(v16, Color01.White, 1, 0);
+
+        // 下面
+        Vertex leftup_Down = new Vertex(v20, Color01.White, 0, 1);
+        Vertex leftdown_Down = new Vertex(v19, Color01.White, 0, 0);
+        Vertex rightdown_Down = new Vertex(v21, Color01.White, 1, 0);
+        Vertex rightup_Down = new Vertex(v22, Color01.White, 1, 1);
+        Vertex leftup2_Down = new Vertex(v20, Color01.White, 0, 1);
+        Vertex rightdown2_Down = new Vertex(v21, Color01.White, 1, 0);
+
         Vertex[] vertices = new Vertex[] {
             // 正面
             vertex1, vertex2, vertex3, vertex22, vertex4, vertex33,
@@ -1135,6 +1228,10 @@ public class SoftRenderForm : Form {
             leftdown_Left,leftup_Left,rightdown_Left,leftup2_Left,rightup_Left,rightdown2_Left,
             // 背面
             leftdown_Back,leftup_Back,rightdown_Back,leftup2_Back,rightup_Back,rightdown2_Back,
+            // 上面
+            leftdown_Up,leftup_Up,rightdown_Up,leftup2_Up,rightup_Up,rightdown2_Up,
+            // 下面
+            leftdown_Down,leftup_Down,rightdown_Down,leftup2_Down,rightup_Down,rightdown2_Down,
         };
         int[] triangle = new int[] {
             0, 1, 2,
@@ -1144,18 +1241,22 @@ public class SoftRenderForm : Form {
            12,13,14,
            15,16,17,
            18,19,20,
-           21,22,23
+           21,22,23,
+           24,25,26,
+           27,28,29,
+           30,31,32,
+           33,34,35
         };
 
         // 坐标/旋转与缩放
         angel = (angel + 1) % 720;
-        Vector3 rotation = new Vector3(angel, angel, angel);
-        Vector3 scale = new Vector3(1, 1, 1)*0.5f;
+        Vector3 rotation = new Vector3(angel, angel, 0);
+        Vector3 scale = new Vector3(1, 1, 1);
         Vector3 worldPosition = new Vector3(0, 0, 0);
 
 
         // 摄像机各参数
-        Vector3 cameraPostion = new Vector3(cameraPositionX, cameraPositionY, -5);        // 摄像机位置
+        Vector3 cameraPostion = new Vector3(cameraPositionX, cameraPositionY, cameraPositionZ);        // 摄像机位置
         Vector3 targetPosition = new Vector3(0, 0, 0);        // 摄像机观察位置
         Vector3 cameraUpDir = new Vector3(0, 1, 0);           // 摄像机向上的向量(粗略的)
         int Near = 1;       // 距离近裁剪平面距离
