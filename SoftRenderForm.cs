@@ -40,7 +40,7 @@ public class SoftRenderForm : Form {
         screenBuffer = new Bitmap(screenWidth, screenHeight);
         screenBufferGraphics = Graphics.FromImage(screenBuffer);
 
-        texture2D = new Bitmap("D:\\preview.bmp");
+        texture2D = new Bitmap("D:\\UnityInstance\\Shader Collection\\Assets\\Textures\\Chapter7\\Grid.png");
 
         StartRender();
     }
@@ -63,8 +63,13 @@ public class SoftRenderForm : Form {
                 break;
             case Keys.Down:
                 cameraPositionY -= 0.01f;
-                break;
+                break;                
         }
+    }
+
+    protected override void OnMouseWheel(MouseEventArgs e) {
+        base.OnMouseWheel(e);
+
     }
 
     /// <summary>
@@ -130,6 +135,7 @@ public class SoftRenderForm : Form {
     int angel = 0;
     float cameraPositionX = 0;
     float cameraPositionY = 0;
+    float cameraPositionZ = 0;
     // 每一帧渲染图形的方法
     public void Render(object sender, System.Timers.ElapsedEventArgs args) {
 
@@ -141,61 +147,70 @@ public class SoftRenderForm : Form {
 
             #region 绘制区域
 
-            // 顶点1/2/3
-            Vector3 v1 = new Vector3(0, 0, 0);
-            Vector3 v2 = new Vector3(0, 2 * 0.2f, 0);
-            Vector3 v3 = new Vector3(2 * 0.2f, 0, 0);            
-            Vector3 v4 = new Vector3(2 * 0.2f, 2 * 0.2f, 0);
-
-            Vertex vertex1 = new Vertex(v1, new Color01(1, 0, 0, 1), 0, 0);
-            Vertex vertex2 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);
-            Vertex vertex3 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
-            Vertex vertex4 = new Vertex(v4, new Color01(0, 0, 1, 1), 1, 1);
-            Vertex vertex22 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);
-            Vertex vertex33 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
-
-            Vertex[] vertices = new Vertex[] { vertex1,vertex2,vertex3,vertex22,vertex4,vertex33 };
-            int[] triangle = new int[] {0,1,2,3,4,5};
-
-            // 坐标/旋转与缩放
-            angel = (angel + 1) % 720;
-            Vector3 rotation = new Vector3(angel, 0, 0);
-            Vector3 scale = new Vector3(1, 1, 1);
-            Vector3 worldPosition = new Vector3(0, 0, 0);
-
-
-            // 摄像机各参数
-            Vector3 cameraPostion = new Vector3(cameraPositionX, cameraPositionY, -3);        // 摄像机位置
-            Vector3 targetPosition = new Vector3(0, 0, 0);        // 摄像机观察位置
-            Vector3 cameraUpDir = new Vector3(0, 1, 0);           // 摄像机向上的向量(粗略的)
-            int Near = 1;       // 距离近裁剪平面距离
-            int Far = 10;       // 距离远裁剪平面距离
-            int top = 1;        // 近平面中心距离上边的距离
-            int bottom = -1;    // 近平面中心距离下边的距离
-            int right = 1;      // 近平面中心距离右边的距离
-            int left = -1;      // 近平面距离左边的距离
-            int angle = 30;     // 摄像机的FOV角度
-
-
-            // 构建M矩阵
-            Matrix4x4 modelMatrix = GetModelMatrix(worldPosition, rotation, scale);
-            // 构建V矩阵
-            Matrix4x4 viewMatrix = GetViewMatrix(cameraPostion, targetPosition, cameraUpDir);
-            // 构建P矩阵
-            Matrix4x4 projectionMatrix = GetProjectionMatrixWithFrustum(angle, Near, Far, right, left, top, bottom);
-
-            // 构建MVP矩阵
-            Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
-
-            //DrawPrimitive(vertex1,vertex2,vertex3,MVPMatrix);
-            //DrawTriangle(100, 100, 400, 0, 300, 300, Color.White);
-            DrawElement(vertices,triangle,MVPMatrix);
+            DrawCube();
+            //DrawTest();
 
             #endregion
+
 
             // 交换缓冲，将后备缓冲交换到前置缓冲
             g.DrawImage(screenBuffer, 0, 0);
         }
+    }
+
+    /// <summary>
+    /// 绘制测试
+    /// </summary>
+    public void DrawTest() {
+        // 顶点1/2/3
+        Vector3 v1 = new Vector3(0, 0, 0);
+        Vector3 v2 = new Vector3(0, 2 * 0.2f, 0);
+        Vector3 v3 = new Vector3(2 * 0.2f, 0, 0);
+        Vector3 v4 = new Vector3(2 * 0.2f, 2 * 0.2f, 0);
+
+        Vertex vertex1 = new Vertex(v1, new Color01(1, 0, 0, 1), 0, 0);
+        Vertex vertex2 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);
+        Vertex vertex3 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
+        Vertex vertex4 = new Vertex(v4, new Color01(0, 0, 1, 1), 1, 1);
+        Vertex vertex22 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);
+        Vertex vertex33 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
+
+        Vertex[] vertices = new Vertex[] { vertex1, vertex2, vertex3, vertex22, vertex4, vertex33 };
+        int[] triangle = new int[] { 0, 1, 2, 3, 4, 5 };
+
+        // 坐标/旋转与缩放
+        angel = (angel + 1) % 720;
+        Vector3 rotation = new Vector3(0, angel, 0);
+        Vector3 scale = new Vector3(5, 2, 2);
+        Vector3 worldPosition = new Vector3(0, 0, 0);
+
+
+        // 摄像机各参数
+        Vector3 cameraPostion = new Vector3(cameraPositionX, cameraPositionY, -5);        // 摄像机位置
+        Vector3 targetPosition = new Vector3(0, 0, 0);        // 摄像机观察位置
+        Vector3 cameraUpDir = new Vector3(0, 1, 0);           // 摄像机向上的向量(粗略的)
+        int Near = 1;       // 距离近裁剪平面距离
+        int Far = 10;       // 距离远裁剪平面距离
+        int top = 1;        // 近平面中心距离上边的距离
+        int bottom = -1;    // 近平面中心距离下边的距离
+        int right = 1;      // 近平面中心距离右边的距离
+        int left = -1;      // 近平面距离左边的距离
+        int angle = 30;     // 摄像机的FOV角度
+
+
+        // 构建M矩阵
+        Matrix4x4 modelMatrix = GetModelMatrix(worldPosition, rotation, scale);
+        // 构建V矩阵
+        Matrix4x4 viewMatrix = GetViewMatrix(cameraPostion, targetPosition, cameraUpDir);
+        // 构建P矩阵
+        Matrix4x4 projectionMatrix = GetProjectionMatrixWithFrustum(angle, Near, Far, right, left, top, bottom);
+
+        // 构建MVP矩阵
+        Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
+
+        //DrawPrimitive(vertex1,vertex2,vertex3,MVPMatrix);
+        //DrawTriangle(100, 100, 400, 0, 300, 300, Color.White);
+        DrawElement(vertices, triangle, MVPMatrix);
     }
 
 
@@ -511,8 +526,16 @@ public class SoftRenderForm : Form {
             for (int x = x1; x != x2; x += stepX) {
 
                 float t = (float)(x - x1) / (float)(x2 - x1);
+
+                float z = MathF.LerpFloat(v1.pos.Z, v2.pos.Z, t);
+
                 float u = MathF.LerpFloat(v1.u,v2.u,t);
                 float v = MathF.LerpFloat(v1.v,v2.v,t);
+
+                // 透视插值矫正
+                float realZ = 1.0f / z;
+                u = u * realZ;
+                v = v * realZ;
 
                 // 对顶点颜色进行插值
                 Color01 color = Color01.LerpColor(v1.color,v2.color,t);    
@@ -671,7 +694,8 @@ public class SoftRenderForm : Form {
         if (v3.pos.Y < v1.pos.Y) {
             // 交换顶点1/3
             Vertex temp = v1; v1 = v3; v3 = temp;
-        } else if (v2.pos.Y < v1.pos.Y) {
+        }
+        if (v2.pos.Y < v1.pos.Y) {
             // 交换顶点1/2
             Vertex temp = v1; v1 = v2; v2 = temp;
         }
@@ -966,7 +990,6 @@ public class SoftRenderForm : Form {
         // 进行齐次除法
         vertex.pos.X /= vertex.pos.W;
         vertex.pos.Y /= vertex.pos.W;
-        vertex.pos.Z /= vertex.pos.W;
 
         // 进行齐次除法后,此时顶点坐标被转换到NDC坐标下
         // 这里的NDC坐标采用OpenGL风格,
@@ -982,6 +1005,13 @@ public class SoftRenderForm : Form {
         vertex.pos.Y = (vertex.pos.Y * 0.5f + 0.5f) * screenHeight;
 
         // 此时可以将Z坐标存入深度缓冲中
+
+
+        // 透视插值矫正,这里将顶点的uv值乘于1/z,
+        // 这样在光栅化的时候插值就是均匀的
+        vertex.pos.Z = 1.0f / vertex.pos.W;
+        vertex.u *= vertex.pos.Z;
+        vertex.v *= vertex.pos.Z;
     }
 
 
@@ -1037,6 +1067,119 @@ public class SoftRenderForm : Form {
             DrawPrimitive(v1,v2,v3,mvp);
         }
     }
+    #endregion
+
+    #region 绘制更多图元
+
+    /// <summary>
+    /// 绘制立方体
+    /// </summary>
+    public void DrawCube() {
+
+        // 顶点1/2/3
+        Vector3 v1 = new Vector3(0, 0, 0);
+        Vector3 v2 = new Vector3(0, 2 * 0.2f, 0);
+        Vector3 v3 = new Vector3(2 * 0.2f, 0, 0);
+        Vector3 v4 = new Vector3(2 * 0.2f, 2 * 0.2f, 0);
+        Vector3 v5 = new Vector3(2 * 0.2f, 2 * 0.2f, -2 * 0.2f);
+        Vector3 v6 = new Vector3(2 * 0.2f, 0, -2 * 0.2f);
+
+        Vector3 v7 = new Vector3(0,0,-2*0.2f);
+        Vector3 v8 = new Vector3(0,0,0);
+        Vector3 v9 = new Vector3(0, 2*0.2f, -2 * 0.2f);
+        Vector3 v10 = new Vector3(0,2*0.2f,0);
+
+        Vector3 v11 = new Vector3(0, 0, -2 * 0.2f);
+        Vector3 v12 = new Vector3(0, 2 * 0.2f, -2 * 0.2f);
+        Vector3 v13 = new Vector3(2 * 0.2f, 0, -2 * 0.2f);
+        Vector3 v14 = new Vector3(2 * 0.2f, 2 * 0.2f, -2 * 0.2f);
+
+        // 正面
+        Vertex vertex1 = new Vertex(v1, new Color01(1, 0, 0, 1), 0, 0);
+        Vertex vertex2 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);
+        Vertex vertex3 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
+        Vertex vertex4 = new Vertex(v4, new Color01(0, 0, 1, 1), 1, 1);
+        Vertex vertex22 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);
+        Vertex vertex33 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
+
+        // 右侧面
+        Vertex leftup_Right = new Vertex(v4, Color01.White, 0,1);
+        Vertex leftdown_Right = new Vertex(v3,Color01.White,0,0);
+        Vertex rightdown_Right = new Vertex(v6,Color01.White,1,0);
+        Vertex rightup_Right = new Vertex(v5,Color01.White,1,1);
+        Vertex leftup2_Right = new Vertex(v4, Color01.White, 0, 1);
+        Vertex rightdown2_Right = new Vertex(v6, Color01.White, 1, 0);
+
+        // 左侧面
+        Vertex leftup_Left = new Vertex(v9, Color01.White, 0, 1);
+        Vertex leftdown_Left = new Vertex(v7, Color01.White, 0, 0);
+        Vertex rightdown_Left = new Vertex(v8, Color01.White, 1, 0);
+        Vertex rightup_Left = new Vertex(v10, Color01.White, 1, 1);
+        Vertex leftup2_Left = new Vertex(v9, Color01.White, 0, 1);
+        Vertex rightdown2_Left = new Vertex(v8, Color01.White, 1, 0);
+
+        // 背面
+        Vertex leftup_Back = new Vertex(v12, Color01.White, 0, 1);
+        Vertex leftdown_Back = new Vertex(v11, Color01.White, 0, 0);
+        Vertex rightdown_Back = new Vertex(v13, Color01.White, 1, 0);
+        Vertex rightup_Back = new Vertex(v14, Color01.White, 1, 1);
+        Vertex leftup2_Back = new Vertex(v12, Color01.White, 0, 1);
+        Vertex rightdown2_Back = new Vertex(v13, Color01.White, 1, 0);
+
+        Vertex[] vertices = new Vertex[] {
+            // 正面
+            vertex1, vertex2, vertex3, vertex22, vertex4, vertex33,
+            // 右侧面
+            leftdown_Right,leftup_Right,rightdown_Right,leftup2_Right,rightup_Right,rightdown2_Right,
+            // 左侧面
+            leftdown_Left,leftup_Left,rightdown_Left,leftup2_Left,rightup_Left,rightdown2_Left,
+            // 背面
+            leftdown_Back,leftup_Back,rightdown_Back,leftup2_Back,rightup_Back,rightdown2_Back,
+        };
+        int[] triangle = new int[] {
+            0, 1, 2,
+            3, 4, 5,
+            6, 7, 8,
+            9,10,11,
+           12,13,14,
+           15,16,17,
+           18,19,20,
+           21,22,23
+        };
+
+        // 坐标/旋转与缩放
+        angel = (angel + 1) % 720;
+        Vector3 rotation = new Vector3(angel, angel, angel);
+        Vector3 scale = new Vector3(1, 1, 1)*0.5f;
+        Vector3 worldPosition = new Vector3(0, 0, 0);
+
+
+        // 摄像机各参数
+        Vector3 cameraPostion = new Vector3(cameraPositionX, cameraPositionY, -5);        // 摄像机位置
+        Vector3 targetPosition = new Vector3(0, 0, 0);        // 摄像机观察位置
+        Vector3 cameraUpDir = new Vector3(0, 1, 0);           // 摄像机向上的向量(粗略的)
+        int Near = 1;       // 距离近裁剪平面距离
+        int Far = 10;       // 距离远裁剪平面距离
+        int top = 1;        // 近平面中心距离上边的距离
+        int bottom = -1;    // 近平面中心距离下边的距离
+        int right = 1;      // 近平面中心距离右边的距离
+        int left = -1;      // 近平面距离左边的距离
+        int angle = 30;     // 摄像机的FOV角度
+
+
+        // 构建M矩阵
+        Matrix4x4 modelMatrix = GetModelMatrix(worldPosition, rotation, scale);
+        // 构建V矩阵
+        Matrix4x4 viewMatrix = GetViewMatrix(cameraPostion, targetPosition, cameraUpDir);
+        // 构建P矩阵
+        Matrix4x4 projectionMatrix = GetProjectionMatrixWithFrustum(angle, Near, Far, right, left, top, bottom);
+
+        // 构建MVP矩阵
+        Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
+
+        DrawElement(vertices, triangle, MVPMatrix);
+    }
+
     #endregion
 }
 
