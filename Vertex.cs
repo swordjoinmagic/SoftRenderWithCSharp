@@ -60,6 +60,8 @@ namespace SortRenderWithCSharp {
             // 对法线进行插值
             result.normal = Vector3.LerpVector3(left.normal,right.normal,t);
 
+            // 对切线进行插值
+            result.tangent = Vector3.LerpVector3(left.tangent,right.tangent,t);
 
             // MVP矩阵
             result.mMatrix = left.mMatrix;

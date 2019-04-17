@@ -43,4 +43,8 @@
 
 ![Avater](readmeImage/漫反射光照.gif)
 
+7. 法线映射
+
+![Avater](readmeImage/法线映射.gif)
+
 ## 一些额外的吐槽

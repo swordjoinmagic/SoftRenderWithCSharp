@@ -80,6 +80,7 @@ public class SoftRenderForm : Form {
         texture2D = new Bitmap("C:\\Users\\Administrator\\Desktop\\29126173.bmp");
 
         // 读取法线贴图
+        //normalTexture = new Bitmap("D:\\UnityInstance\\Shader Collection\\Assets\\Textures\\Chapter7\\Brick_Normal.bmp");
         normalTexture = new Bitmap("C:\\Users\\Administrator\\Desktop\\distorition1.bmp");
 
         // 读取OBJ文件
@@ -264,7 +265,7 @@ public class SoftRenderForm : Form {
 
         if (LightingOn) {
             // 初始化法线
-            CalculateVerticsNormal(vertices, triangle);
+            CalculateVerticsTangent(vertices,triangle);
 
             // 给每个顶点引用一份MVP矩阵
             foreach (Vertex v in vertices) {
@@ -1367,7 +1368,14 @@ public class SoftRenderForm : Form {
         // 初始化光源方向(默认为 观察中心点指向摄像机的方向 )
         //DirectionLight =  targetPosition - cameraPostion;
         // 从左上往右下照
-        DirectionLight = (targetPosition - cameraPostion) + new Vector3(0,2,0);
+        //DirectionLight = (targetPosition - cameraPostion) + new Vector3(0,2,0);
+        DirectionLight = new Vector3(0,0,1);
+        Vector3 cameraRotation = new Vector3(angel,0,0);
+        Matrix4x4 CameraRMatrix = GetRotateMatrix((int)cameraRotation.X, (int)cameraRotation.Y, (int)cameraRotation.Z);
+        // 变换光源方向
+        DirectionLight = CameraRMatrix * DirectionLight;
+
+        screenBufferGraphics.DrawString("光源方向："+cameraRotation.ToString(), new Font("Verdana", 12), new SolidBrush(Color.Red), new PointF(1.0f, 20.0f));
 
         // 构建M矩阵
         Matrix4x4 modelMatrix = GetModelMatrix(worldPosition, rotation, scale);
@@ -1382,6 +1390,7 @@ public class SoftRenderForm : Form {
         if (LightingOn) {
             // 初始化平行光颜色
             //lightColor = new Color01(1,0.5f,0.5f, 1);
+            CalculateVerticsTangent(vertices,triangle);
 
             // 给每个顶点引用一份MVP矩阵
             foreach (int i in triangle) {
@@ -1389,7 +1398,7 @@ public class SoftRenderForm : Form {
                 v.normal = normals[i];
                 v.mMatrix = modelMatrix;
                 v.vMatrix = viewMatrix;
-                v.pMatrix = projectionMatrix;
+                v.pMatrix = projectionMatrix;                                
             }
 
         }
@@ -1406,7 +1415,7 @@ public class SoftRenderForm : Form {
     /// <param name="vertices"></param>
     /// <param name="triangle"></param>
     /// <returns></returns>
-    public void CalculateVerticsNormal(Vertex[] vertices,int[] triangle) {
+    public void CalculateVerticsTangent(Vertex[] vertices,int[] triangle) {
         // 凑不成一系列三角形图元就退出
         if (triangle.Length%3!=0) return ;
 
@@ -1415,37 +1424,55 @@ public class SoftRenderForm : Form {
             Vertex v2 = vertices[triangle[i+1]];
             Vertex v3 = vertices[triangle[i+2]];
 
-            Vector3 normal = Vector3.Cross((v2.pos - v1.pos), (v3.pos - v1.pos));
-            normal.Normlize();
+            float a = 1.0f / ((v2.u - v1.u) * (v3.v - v1.v) - (v2.v - v1.v) * (v3.u - v1.u));
+            Vector3 Q0 = v2.pos - v1.pos;
+            Vector3 Q1 = v3.pos - v1.pos;
 
-            // 计算顶点v1的法线
-            v1.normal = normal;
-            // 计算v2的法线
-            v2.normal = normal;
-            // 计算v3的法线
-            v3.normal = normal;
+            // 面切线
+            Vector3 tangentF = new Vector3(
+                x: (v3.v - v1.v) * Q0.X + (v1.v - v2.v) * Q1.X,
+                y: (v3.v - v1.v) * Q0.Y + (v1.v - v2.v) * Q1.Y,
+                z: (v3.v - v1.v) * Q0.Z + (v1.v - v2.v) * Q1.Z
+            ) * a;
+            // 面副切线
+            Vector3 binormalF = new Vector3(
+                x: (v1.u - v3.u) * Q0.X + (v2.u - v1.u) * Q1.X,
+                y: (v1.u - v3.u) * Q0.Y + (v2.u - v1.u) * Q1.Y,
+                z: (v1.u - v3.u) * Q0.Z + (v2.u - v1.u) * Q1.Z
+            );
+
+            v1.tangent = tangentF - v1.normal * (Vector3.Dot(tangentF, v1.normal));
+            v1.tangent.Normlize();
+            v2.tangent = tangentF - v2.normal * (Vector3.Dot(tangentF, v2.normal));
+            v2.tangent.Normlize();
+            v3.tangent = tangentF - v3.normal * (Vector3.Dot(tangentF, v3.normal));
+            v3.tangent.Normlize();
+
+            v1.tangent.W = Vector3.Dot(Vector3.Cross(v1.normal, v1.tangent), binormalF) > 0 ? 1 : -1;
+            v2.tangent.W = Vector3.Dot(Vector3.Cross(v2.normal, v2.tangent), binormalF) > 0 ? 1 : -1;
+            v3.tangent.W = Vector3.Dot(Vector3.Cross(v3.normal, v3.tangent), binormalF) > 0 ? 1 : -1;
         }
         
     }
 
     /// <summary>
-    /// 山寨版片元着色器，
-    /// 根据一个顶点的各属性，计算当前顶点（屏幕空间下）的像素的颜色
+    /// 基于半兰伯特光照模型的光照
     /// </summary>
     /// <param name="vertex"></param>
     /// <returns></returns>
-    public Color01 FragmentShader(Vertex vertex) {
-
+    public Color01 LightingWithLambert(Vertex vertex) {
         // 将顶点的法线变换到世界空间下，对于一个只包含旋转变换的变换矩阵，他是正交矩阵
         // 使用m矩阵变换法线(仅适用于只发生旋转的物体)
         Vector3 worldNormal = vertex.mMatrix * vertex.normal;
-        worldNormal.Normlize();       
+        worldNormal.Normlize();
 
         // 根据平行光方向及当前法线方向，
         // 计算当前像素的辐照度
-        float radiance = Math.Max(0,Vector3.Dot(worldNormal, DirectionLight));
+        //float radiance = Math.Max(0,Vector3.Dot(worldNormal, DirectionLight));
+        // 使用半兰伯特表达式计算辐照度
+        float radiance = Vector3.Dot(worldNormal, DirectionLight) * 0.5f + 0.5f;
         // 获得贴图颜色
-        Color01 albedo = Texture.Tex2D(texture2D,vertex.u,vertex.v);
+        Color01 albedo = Texture.Tex2D(texture2D, vertex.u, vertex.v);
 
         // 使用Blinn-Phong模型计算高光反射
 
@@ -1463,14 +1490,78 @@ public class SoftRenderForm : Form {
         float gloss = 20f;
 
         // 计算高光反射
-        Color01 specular = lightColor * (float)Math.Pow(Math.Max(0,Vector3.Dot(h,worldNormal)),gloss);
+        Color01 specular = lightColor * (float)Math.Pow(Math.Max(0, Vector3.Dot(h, worldNormal)), gloss);
         // 计算漫反射光照
         Color01 diffuse = albedo * radiance * lightColor;
 
-        Color01 finalColor = diffuse + specular;
+        Color01 finalColor = lightColor * radiance;
         finalColor.A = 1;
 
         return finalColor;
+    }
+
+    /// <summary>
+    /// 山寨版片元着色器，
+    /// 根据一个顶点的各属性，计算当前顶点（屏幕空间下）的像素的颜色
+    /// </summary>
+    /// <param name="vertex"></param>
+    /// <returns></returns>
+    public Color01 FragmentShader(Vertex vertex) {
+
+        // 基于半兰伯特光照模型的光照
+        //return LightingWithLambert(vertex);
+
+        // 从法线贴图中取出法线(切线空间下的)
+        Color01 UndecryptedNormal = Texture.Tex2D(normalTexture,vertex.u,vertex.v);
+        // 把法线从[0,1]区间变回到[-1,1]区间
+        Vector3 normal = new Vector3(
+            UndecryptedNormal.R * 2 - 1,
+            UndecryptedNormal.G * 2 - 1,
+            UndecryptedNormal.B * 2 - 1
+            );
+
+        // 获得世界坐标下的法线
+        Vector3 worldNormal = vertex.mMatrix * vertex.normal;
+        worldNormal.Normlize();
+        // 获得世界坐标下的切线
+        Vector3 worldTangent = vertex.mMatrix * vertex.tangent;
+        worldTangent.Normlize();
+        // 获得世界坐标下的副切线
+        Vector3 worldBinormal = Vector3.Cross(worldNormal,worldTangent) * vertex.tangent.W;
+        worldBinormal.Normlize();
+
+        // 构建 切线-世界 变换矩阵
+        Matrix4x4 TtoW = new Matrix4x4();
+        TtoW.Identity();
+
+        TtoW.value[0,0] = worldTangent.X;
+        TtoW.value[1, 0] = worldTangent.Y;
+        TtoW.value[2, 0] = worldTangent.Z;
+
+        TtoW.value[0, 1] = worldBinormal.X;
+        TtoW.value[1, 1] = worldBinormal.Y;
+        TtoW.value[2, 1] = worldBinormal.Z;
+
+        TtoW.value[0, 2] = worldNormal.X;
+        TtoW.value[1, 2] = worldNormal.Y;
+        TtoW.value[2, 2] = worldNormal.Z;
+
+        // 将切线空间的法线变为世界坐标
+        normal = TtoW * normal;
+        normal.Normlize();
+
+        // 增大凹凸比例
+        normal.X *= 3;
+        normal.Y *= 3;
+        normal.Z *= MathF.Sqrt( 1 - MathF.Clamp01( normal.X*normal.X+normal.Y*normal.Y ) );
+
+        Color01 albedo = Texture.Tex2D(texture2D,vertex.u,vertex.v);
+
+        float radiance = Vector3.Dot(normal, DirectionLight) * 0.5f + 0.5f;
+
+        Color01 diffuse = Color01.White * radiance;
+
+        return diffuse;
     }
     
 
