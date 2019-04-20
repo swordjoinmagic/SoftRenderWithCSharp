@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -204,6 +203,7 @@ public class SoftRenderForm : Form {
 
             DrawCube();
             //DrawTest();
+
 
             #endregion
 
@@ -1559,7 +1559,7 @@ public class SoftRenderForm : Form {
 
         float radiance = Vector3.Dot(normal, DirectionLight) * 0.5f + 0.5f;
 
-        Color01 diffuse = Color01.White * radiance;
+        Color01 diffuse = albedo * radiance;
 
         return diffuse;
     }
