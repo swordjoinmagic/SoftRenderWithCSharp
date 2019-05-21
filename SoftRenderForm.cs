@@ -203,9 +203,9 @@ public class SoftRenderForm : Form {
 
             #region 绘制区域
 
-            //DrawCube();
+            DrawCube();
             //DrawTest();
-            DrawQuad();
+            //DrawQuad();
 
             #endregion
 
@@ -619,11 +619,11 @@ public class SoftRenderForm : Form {
                 // 对纹理贴图进行采样
                 Color01 textureColor = Texture.Tex2D(texture2D, u, v);
 
-                Color01 finalColor = textureColor;
+                Color01 finalColor = textureColor*color;
 
-                if (fragmentShaderOn)
-                    DrawPixel(x, y, FragmentShader(vertex));
-                else
+                //if (fragmentShaderOn)
+                //    DrawPixel(x, y, FragmentShader(vertex));
+                //else
                     DrawPixel(x, y, finalColor);
 
                 // 增量误差
@@ -1151,6 +1151,19 @@ public class SoftRenderForm : Form {
             DrawPrimitive(v1,v2,v3,mvp);
         }
     }
+
+    public void DrawElement(Mesh mesh,Matrix4x4 mvp) {
+        int[] triangle = mesh.triangles;
+        Vertex[] vertices = mesh.vertices;
+        if (triangle.Length % 3 != 0) return;
+        for (int i = 0; i < triangle.Length; i += 3) {
+            Vertex v1 = vertices[triangle[i]];
+            Vertex v2 = vertices[triangle[i + 1]];
+            Vertex v3 = vertices[triangle[i + 2]];
+
+            DrawPrimitive(v1, v2, v3, mvp);
+        }
+    }
     #endregion
 
     #region 深度写入/深度测试
@@ -1300,140 +1313,6 @@ public class SoftRenderForm : Form {
     /// </summary>
     public void DrawCube() {
 
-        const float UNIT_SIZE = 0.2f;
-
-        // 顶点1/2/3
-        Vector3 v1 = new Vector3(0, 0, 0);
-        Vector3 v2 = new Vector3(0, 2 * UNIT_SIZE, 0);
-        Vector3 v3 = new Vector3(2 * UNIT_SIZE, 0, 0);
-        Vector3 v4 = new Vector3(2 * UNIT_SIZE, 2 * UNIT_SIZE, 0);
-        Vector3 v5 = new Vector3(2 * UNIT_SIZE, 2 * UNIT_SIZE, -2 * UNIT_SIZE);
-        Vector3 v6 = new Vector3(2 * UNIT_SIZE, 0, -2 * UNIT_SIZE);
-
-        Vector3 v7 = new Vector3(0,0,-2*UNIT_SIZE);
-        Vector3 v8 = new Vector3(0,0,0);
-        Vector3 v9 = new Vector3(0, 2*UNIT_SIZE, -2 * UNIT_SIZE);
-        Vector3 v10 = new Vector3(0,2*UNIT_SIZE,0);
-
-        Vector3 v11 = new Vector3(0, 0, -2 * UNIT_SIZE);
-        Vector3 v12 = new Vector3(0, 2 * UNIT_SIZE, -2 * UNIT_SIZE);
-        Vector3 v13 = new Vector3(2 * UNIT_SIZE, 0, -2 * UNIT_SIZE);
-        Vector3 v14 = new Vector3(2 * UNIT_SIZE, 2 * UNIT_SIZE, -2 * UNIT_SIZE);
-
-        Vector3 v15 = new Vector3(0,2*UNIT_SIZE,0);
-        Vector3 v16 = new Vector3(2*UNIT_SIZE,2*UNIT_SIZE,0);
-        Vector3 v17 = new Vector3(0,2*UNIT_SIZE,-2*UNIT_SIZE);
-        Vector3 v18 = new Vector3(2*UNIT_SIZE,2*UNIT_SIZE,-2*UNIT_SIZE);
-
-        Vector3 v19 = new Vector3(0,0,0);   // 左下
-        Vector3 v20 = new Vector3(0,0,-2*UNIT_SIZE);    // 左上
-        Vector3 v21 = new Vector3(2*UNIT_SIZE,0,0);     // 右下
-        Vector3 v22 = new Vector3(2 * UNIT_SIZE, 0, -2 * UNIT_SIZE);    // 右上
-
-        // 正面
-        Vertex vertex1 = new Vertex(v1, new Color01(1, 0, 0, 1), 0, 0);
-        Vertex vertex2 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);
-        Vertex vertex3 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
-        Vertex vertex4 = new Vertex(v4, new Color01(0, 0, 1, 1), 1, 1);
-        Vertex vertex22 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);
-        Vertex vertex33 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);
-
-        // 右侧面
-        Vertex leftup_Right = new Vertex(v4, new Color01(1, 0, 0, 1), 0,1);
-        Vertex leftdown_Right = new Vertex(v3, new Color01(0, 1, 0, 1), 0,0);
-        Vertex rightdown_Right = new Vertex(v6, new Color01(0, 0, 1, 1), 1,0);
-        Vertex rightup_Right = new Vertex(v5, new Color01(0, 0, 1, 1), 1,1);
-        Vertex leftup2_Right = new Vertex(v4, new Color01(0, 1, 0, 1), 0, 1);
-        Vertex rightdown2_Right = new Vertex(v6, new Color01(0, 0, 1, 1), 1, 0);
-
-        // 左侧面
-        Vertex leftup_Left = new Vertex(v9, new Color01(1, 0, 0, 1), 0, 1);
-        Vertex leftdown_Left = new Vertex(v7, new Color01(0, 1, 0, 1), 0, 0);
-        Vertex rightdown_Left = new Vertex(v8, new Color01(0, 0, 1, 1), 1, 0);
-        Vertex rightup_Left = new Vertex(v10, new Color01(0, 0, 1, 1), 1, 1);
-        Vertex leftup2_Left = new Vertex(v9, new Color01(0, 1, 0, 1), 0, 1);
-        Vertex rightdown2_Left = new Vertex(v8, new Color01(0, 0, 1, 1), 1, 0);
-
-        // 背面
-        Vertex leftup_Back = new Vertex(v12, new Color01(1, 0, 0, 1), 0, 1);
-        Vertex leftdown_Back = new Vertex(v11, new Color01(0, 1, 0, 1), 0, 0);
-        Vertex rightdown_Back = new Vertex(v13, new Color01(0, 0, 1, 1), 1, 0);
-        Vertex rightup_Back = new Vertex(v14, new Color01(0, 0, 1, 1), 1, 1);
-        Vertex leftup2_Back = new Vertex(v12, new Color01(0, 1, 0, 1), 0, 1);
-        Vertex rightdown2_Back = new Vertex(v13, new Color01(0, 0, 1, 1), 1, 0);
-
-        // 上面
-        Vertex leftup_Up = new Vertex(v17, new Color01(1, 0, 0, 1), 0, 1);
-        Vertex leftdown_Up = new Vertex(v15, new Color01(0, 1, 0, 1), 0, 0);
-        Vertex rightdown_Up = new Vertex(v16, new Color01(0, 0, 1, 1), 1, 0);
-        Vertex rightup_Up = new Vertex(v18, new Color01(0, 0, 1, 1), 1, 1);
-        Vertex leftup2_Up = new Vertex(v17, new Color01(0, 1, 0, 1), 0, 1);
-        Vertex rightdown2_Up = new Vertex(v16, new Color01(0, 0, 1, 1), 1, 0);
-
-        // 下面
-        Vertex leftup_Down = new Vertex(v20, new Color01(1, 0, 0, 1), 0, 1);
-        Vertex leftdown_Down = new Vertex(v19, new Color01(0, 1, 0, 1), 0, 0);
-        Vertex rightdown_Down = new Vertex(v21, new Color01(0, 0, 1, 1), 1, 0);
-        Vertex rightup_Down = new Vertex(v22, new Color01(0, 0, 1, 1), 1, 1);
-        Vertex leftup2_Down = new Vertex(v20, new Color01(0, 1, 0, 1), 0, 1);
-        Vertex rightdown2_Down = new Vertex(v21, new Color01(0, 0, 1, 1), 1, 0);
-
-        Vertex[] vertices = new Vertex[] {
-            // 正面
-            vertex1, vertex2, vertex3, vertex22, vertex4, vertex33,
-            // 右侧面
-            leftdown_Right,leftup_Right,rightdown_Right,leftup2_Right,rightup_Right,rightdown2_Right,
-            // 左侧面
-            leftdown_Left,leftup_Left,rightdown_Left,leftup2_Left,rightup_Left,rightdown2_Left,
-            // 背面
-            leftdown_Back,leftup_Back,rightdown_Back,leftup2_Back,rightup_Back,rightdown2_Back,
-            // 上面
-            leftdown_Up,leftup_Up,rightdown_Up,leftup2_Up,rightup_Up,rightdown2_Up,
-            // 下面
-            leftdown_Down,leftup_Down,rightdown_Down,leftup2_Down,rightup_Down,rightdown2_Down,
-        };
-        // 指向屏幕外
-        Vector3 forwardV = new Vector3(0,0,1);
-        // 指向屏幕内
-        Vector3 backV = new Vector3(0,0,-1);
-        // 指向左边
-        Vector3 leftV = new Vector3(-1,0,0);
-        // 指向右边
-        Vector3 rightV = new Vector3(1,0,0);
-        // 指向上
-        Vector3 upV = new Vector3(0,1,0);
-        // 指向下
-        Vector3 downV = new Vector3(0,-1,0);
-
-        Vector3[] normals = new Vector3[] {
-            // 正面
-            forwardV,forwardV,forwardV,forwardV,forwardV,forwardV,
-            // 右侧面
-            rightV,rightV,rightV,rightV,rightV,rightV,
-            // 左侧面
-            leftV,leftV,leftV,leftV,leftV,leftV,
-            // 背面
-            backV,backV,backV,backV,backV,backV,
-            // 上面
-            upV,upV,upV,upV,upV,upV,
-            // 下面
-            downV,downV,downV,downV,downV,downV
-        };
-        int[] triangle = new int[] {
-            0, 1, 2,
-            3, 4, 5,
-            6, 7, 8,
-            9,10,11,
-           12,13,14,
-           15,16,17,
-           18,19,20,
-           21,22,23,
-           24,25,26,
-           27,28,29,
-           30,31,32,
-           33,34,35
-        };
-
         // 坐标/旋转与缩放
         angel = (angel + 1) % 720;
         //angel = 0;
@@ -1455,9 +1334,6 @@ public class SoftRenderForm : Form {
         int angle = 30;     // 摄像机的FOV角度
 
         // 初始化光源方向(默认为 观察中心点指向摄像机的方向 )
-        //DirectionLight =  targetPosition - cameraPostion;
-        // 从左上往右下照
-        //DirectionLight = (targetPosition - cameraPostion) + new Vector3(0,2,0);
         DirectionLight = new Vector3(0,0,1);
         Vector3 cameraRotation = new Vector3(lightAngle, 0,0);
         Matrix4x4 CameraRMatrix = GetRotateMatrix((int)cameraRotation.X, (int)cameraRotation.Y, (int)cameraRotation.Z);
@@ -1476,23 +1352,17 @@ public class SoftRenderForm : Form {
         // 构建MVP矩阵
         Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
+        Cube cube = new Cube();
         if (LightingOn) {
-            // 初始化平行光颜色
-            //lightColor = new Color01(1,0.5f,0.5f, 1);
-            CalculateVerticsTangent(vertices,triangle);
-
             // 给每个顶点引用一份MVP矩阵
-            foreach (int i in triangle) {
-                Vertex v = vertices[triangle[i]];
-                v.normal = normals[i];
+            foreach (int i in cube.triangles) {
+                Vertex v = cube.vertices[i];
                 v.mMatrix = modelMatrix;
                 v.vMatrix = viewMatrix;
-                v.pMatrix = projectionMatrix;                                
+                v.pMatrix = projectionMatrix;
             }
-
         }
-
-        DrawElement(vertices, triangle, MVPMatrix);
+        DrawElement(cube, MVPMatrix);
     }
 
     /// <summary>

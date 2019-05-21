@@ -47,8 +47,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Color01.cs" />
+    <Compile Include="Cube.cs" />
     <Compile Include="MathF.cs" />
     <Compile Include="Matrix4x4.cs" />
+    <Compile Include="Mesh.cs" />
     <Compile Include="OBJLoader.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
