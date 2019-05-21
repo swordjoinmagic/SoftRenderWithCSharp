@@ -68,6 +68,8 @@ namespace SortRenderWithCSharp {
             result.vMatrix = left.vMatrix;
             result.pMatrix = left.pMatrix;
 
+            
+
             return result;
         }
 
@@ -75,5 +77,36 @@ namespace SortRenderWithCSharp {
             return string.Format("({0},{1},{2},{3})",pos.X,pos.Y,pos.Z,pos.W);
         }
 
+
+        public Vertex DeepyCopy() {
+            Vertex result = new Vertex();
+
+            result.modelSpacePos = modelSpacePos;
+
+            result.pos.X = pos.X;
+            result.pos.Y = pos.Y;
+            result.pos.W = pos.W; 
+            // 对z值进行插值
+            result.pos.Z = pos.Z;
+            // 对颜色属性进行插值
+            result.color = color;
+            // 对uv进行插值(此处插值不正确,对于投影变换
+            // 需进行 透视插值矫正)
+            result.u = u;
+            result.v = v;
+
+            // 对法线进行插值
+            result.normal = normal;
+
+            // 对切线进行插值
+            result.tangent = tangent;
+
+            // MVP矩阵
+            result.mMatrix = mMatrix;
+            result.vMatrix = vMatrix;
+            result.pMatrix = pMatrix;
+
+            return result;
+        }
     }
 }

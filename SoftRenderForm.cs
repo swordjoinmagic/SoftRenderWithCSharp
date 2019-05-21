@@ -75,12 +75,14 @@ public class SoftRenderForm : Form {
         fragmentShaderOn = true;
 
         // 读取贴图
-        //texture2D = new Bitmap("D:\\UnityInstance\\Shader Collection\\Assets\\Textures\\Chapter7\\Grid.png");
-        texture2D = new Bitmap("C:\\Users\\Administrator\\Desktop\\29126173.bmp");
+        //texture2D = new Bitmap("D:\\C#Instance\\LerningRenderPiplineWithSoftRender\\SortRenderWithCSharp\\SortRenderWithCSharp\readmeImage\\29126173.bmp");
+        //texture2D = new Bitmap("C:\\Users\\Administrator\\Desktop\\29126173.bmp");
+        texture2D = new Bitmap("D:\\UnityInstance\\资源\\Unity Shadeers Book Assert\\Unity_Shaders_Book-master\\Assets\\Textures\\Chapter7\\Grid.png");
 
         // 读取法线贴图
+        normalTexture = new Bitmap(256,256);
         //normalTexture = new Bitmap("D:\\UnityInstance\\Shader Collection\\Assets\\Textures\\Chapter7\\Brick_Normal.bmp");
-        normalTexture = new Bitmap("C:\\Users\\Administrator\\Desktop\\distorition1.bmp");
+        //normalTexture = new Bitmap("D:\\C#Instance\\LerningRenderPiplineWithSoftRender\\SortRenderWithCSharp\\SortRenderWithCSharp\readmeImage\\distorition1.bmp");
 
         // 读取OBJ文件
         OBJLoader.LoadOBJ("D:\\C#Instance\\LerningRenderPiplineWithSoftRender\\SortRenderWithCSharp\\SortRenderWithCSharp\\cubea.obj");
@@ -96,16 +98,16 @@ public class SoftRenderForm : Form {
         base.OnKeyDown(e);
         switch (e.KeyCode) {
             case Keys.Right:
-                cameraPositionX -= 0.01f;
-                break;
-            case Keys.Left:
                 cameraPositionX += 0.01f;
                 break;
+            case Keys.Left:
+                cameraPositionX -= 0.01f;
+                break;
             case Keys.Up:
-                cameraPositionY += 0.01f;
+                cameraPositionY -= 0.01f;
                 break;
             case Keys.Down:
-                cameraPositionY -= 0.01f;
+                cameraPositionY += 0.01f;
                 break;
             case Keys.Z:
                 cameraPositionZ += 0.01f;
@@ -189,7 +191,7 @@ public class SoftRenderForm : Form {
     int angel = 0;
     float cameraPositionX = 0;
     float cameraPositionY = 0;
-    float cameraPositionZ = -5;
+    float cameraPositionZ = -10;
     // 每一帧渲染图形的方法
     public void Render(object sender, System.Timers.ElapsedEventArgs args) {
 
@@ -201,9 +203,9 @@ public class SoftRenderForm : Form {
 
             #region 绘制区域
 
-            DrawCube();
+            //DrawCube();
             //DrawTest();
-
+            DrawQuad();
 
             #endregion
 
@@ -581,8 +583,7 @@ public class SoftRenderForm : Form {
         int stepY = ((dy > 0 ? 1 : 0) << 1) - 1;
 
         dx = Math.Abs(dx); dy = Math.Abs(dy);
-
-       
+    
         // 误差
         int eps = 0;
 
@@ -593,30 +594,6 @@ public class SoftRenderForm : Form {
 
                 float t = (float)(x - x1) / (float)(x2 - x1);      
                 
-                #region 测试
-                //float z = MathF.LerpFloat(v1.pos.Z, v2.pos.Z, t);
-
-                //// 对当前像素进行深度测试
-                //if (IsZTest)
-                //    if (!ZTest(x, y, z)) continue;
-
-                //float u = MathF.LerpFloat(v1.u, v2.u, t);
-                //float v = MathF.LerpFloat(v1.v, v2.v, t);
-
-                //// 透视插值矫正
-                //float realZ = 1.0f / z;
-                //u = u * realZ;
-                //v = v * realZ;
-
-                //// 对顶点颜色进行插值
-                //Color01 color = Color01.LerpColor(v1.color, v2.color, t);
-
-                //// 对纹理贴图进行采样
-                //Color01 textureColor = Texture.Tex2D(texture2D, u, v);
-
-                //DrawPixel(x, y, textureColor);
-                #endregion
-
                 // 当前顶点
                 Vertex vertex = Vertex.LerpVertexData(v1, v2, t);
                 vertex.pos.X = x;
@@ -1021,8 +998,14 @@ public class SoftRenderForm : Form {
         viewMatrix.value[1, 2] = forwardDir.Y;
         viewMatrix.value[2, 2] = forwardDir.Z;
 
-        // 再加上自身的平移矩阵
-        viewMatrix = GetTranslateMatrix(position.X, position.Y, position.Z) * viewMatrix;
+        // 相当于将摄像机移回原点
+        Matrix4x4 translateMatrix = GetTranslateMatrix(-position.X, -position.Y, -position.Z);
+
+        // 观察空间使用右手坐标系,需要对z分量进行取反操作
+        Matrix4x4 negateZMatrix = GetScaleMatrix(1,1,-1);
+
+        // 变换顺序 先平移后旋转
+        viewMatrix = negateZMatrix * viewMatrix * translateMatrix;
 
         return viewMatrix;
     }
@@ -1090,7 +1073,10 @@ public class SoftRenderForm : Form {
     /// 变换到NDC坐标空间下,然后再将该顶点映射到屏幕空间上    
     /// </summary>
     /// <param name="vertex"></param>
-    public void ScreenMapping(Vertex vertex) {
+    public Vertex ScreenMapping(Vertex v) {
+
+        Vertex vertex = v.DeepyCopy();
+
         // 进行齐次除法
         vertex.pos.X /= vertex.pos.W;
         vertex.pos.Y /= vertex.pos.W;
@@ -1110,12 +1096,12 @@ public class SoftRenderForm : Form {
 
         // 透视插值矫正,这里将顶点的uv值乘于1/z,
         // 这样在光栅化的时候插值就是均匀的
-        vertex.pos.Z = 1.0f / vertex.pos.W;
+        float reciprocalW = 1.0f / vertex.pos.W;
+        vertex.pos.Z = reciprocalW;
         vertex.u *= vertex.pos.Z;
         vertex.v *= vertex.pos.Z;
 
-        // 此时可以将Z坐标存入深度缓冲中
-        //ZBuffer[(int)vertex.pos.X, (int)vertex.pos.Y] = vertex.pos.Z;
+        return vertex;
     }
 
 
@@ -1127,9 +1113,9 @@ public class SoftRenderForm : Form {
     /// <param name="v3"></param>
     public void DrawPrimitive(Vertex v1,Vertex v2,Vertex v3,Matrix4x4 mvp) {
         // 将各顶点作为列矩阵进行MVP变换
-        v1.pos = mvp * v1.pos;
-        v2.pos = mvp * v2.pos;
-        v3.pos = mvp * v3.pos;
+        v1.pos = mvp * v1.modelSpacePos;
+        v2.pos = mvp * v2.modelSpacePos;
+        v3.pos = mvp * v3.modelSpacePos;
 
         // 判断有顶点是否应该被裁剪
         if (CVVCutting(v1.pos) ||
@@ -1137,18 +1123,12 @@ public class SoftRenderForm : Form {
             CVVCutting(v3.pos)) return;
 
         // 对顶点进行屏幕映射操作
-        ScreenMapping(v1);
-        ScreenMapping(v2);
-        ScreenMapping(v3);
+        Vertex vertex1 = ScreenMapping(v1);
+        Vertex vertex2 = ScreenMapping(v2);
+        Vertex vertex3 = ScreenMapping(v3);
 
         // 使用这个三个顶点的屏幕坐标绘制三角形图元
-        DrawTriangle(v1, v2, v3);
-        //DrawTriangle(
-        //    (int)v1.pos.X, (int)v1.pos.Y,
-        //    (int)v2.pos.X, (int)v2.pos.Y,
-        //    (int)v3.pos.X, (int)v3.pos.Y,
-        //    Color.White
-        //    );
+        DrawTriangle(vertex1, vertex2, vertex3);
     }
 
     /// <summary>
@@ -1206,7 +1186,115 @@ public class SoftRenderForm : Form {
 
     #region 绘制更多图元
 
+    int lightAngle;
     public Vector3 cameraPostion;
+
+    public void DrawQuad() {
+        const float UNIT_SIZE = 0.2f;
+
+        // 顶点1/2/3
+        Vector3 v1 = new Vector3(0, 0, 0);                              // 左下
+        Vector3 v2 = new Vector3(0, 2 * UNIT_SIZE, 0);                  // 左上
+        Vector3 v3 = new Vector3(2 * UNIT_SIZE, 0, 0);
+        Vector3 v4 = new Vector3(2 * UNIT_SIZE, 2 * UNIT_SIZE, 0);
+
+        // 正面
+        Vertex vertex1 = new Vertex(v1, new Color01(1, 0, 0, 1), 0, 0);     // 左下
+        Vertex vertex2 = new Vertex(v2, new Color01(0, 1, 0, 1), 0, 1);     // 左上
+        Vertex vertex3 = new Vertex(v3, new Color01(0, 0, 1, 1), 1, 0);     // 右下
+        Vertex vertex4 = new Vertex(v4, new Color01(0, 0, 1, 1), 1, 1);     // 右上
+
+        Vertex[] vertices = new Vertex[] {
+            vertex1,vertex2,vertex3,vertex4
+        };
+
+        int[] triangle = new int[] {
+            0,1,2,
+            1,3,2
+        };
+
+        Vector3 rotation = new Vector3(angel, angel, angel);
+        Vector3 scale = new Vector3(1, 1, 1);
+        Vector3 worldPosition = new Vector3(0, 0, 0);
+
+
+        // 摄像机各参数
+        cameraPostion = new Vector3(cameraPositionX, cameraPositionY, cameraPositionZ);        // 摄像机位置
+        Vector3 targetPosition = new Vector3(0, 0, 0);        // 摄像机观察位置
+        Vector3 cameraUpDir = new Vector3(0, 1, 0);           // 摄像机向上的向量(粗略的)
+        int Near = 1;       // 距离近裁剪平面距离
+        int Far = 10;       // 距离远裁剪平面距离
+        int top = 1;        // 近平面中心距离上边的距离
+        int bottom = -1;    // 近平面中心距离下边的距离
+        int right = 1;      // 近平面中心距离右边的距离
+        int left = -1;      // 近平面距离左边的距离
+        int angle = 30;     // 摄像机的FOV角度
+
+        DirectionLight = new Vector3(0, 0, 1);
+        Vector3 cameraRotation = new Vector3(lightAngle, 0, 0);
+        Matrix4x4 CameraRMatrix = GetRotateMatrix((int)cameraRotation.X, (int)cameraRotation.Y, (int)cameraRotation.Z);
+        // 变换光源方向
+        DirectionLight = CameraRMatrix * DirectionLight;
+
+        screenBufferGraphics.DrawString("光源方向：" + cameraRotation.ToString(), new Font("Verdana", 12), new SolidBrush(Color.Red), new PointF(1.0f, 20.0f));
+
+        // 构建M矩阵
+        Matrix4x4 modelMatrix = GetModelMatrix(worldPosition, rotation, scale);
+        // 构建V矩阵
+        Matrix4x4 viewMatrix = GetViewMatrix(cameraPostion, targetPosition, cameraUpDir);
+        // 构建P矩阵
+        Matrix4x4 projectionMatrix = GetProjectionMatrixWithFrustum(angle, Near, Far, right, left, top, bottom);
+
+        // 构建MVP矩阵
+        Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
+
+        // 指向屏幕外
+        Vector3 forwardV = new Vector3(0, 0, 1);
+        // 指向屏幕内
+        Vector3 backV = new Vector3(0, 0, -1);
+        // 指向左边
+        Vector3 leftV = new Vector3(-1, 0, 0);
+        // 指向右边
+        Vector3 rightV = new Vector3(1, 0, 0);
+        // 指向上
+        Vector3 upV = new Vector3(0, 1, 0);
+        // 指向下
+        Vector3 downV = new Vector3(0, -1, 0);
+
+        Vector3[] normals = new Vector3[] {
+            // 正面
+            forwardV,forwardV,forwardV,forwardV,forwardV,forwardV,
+            // 右侧面
+            rightV,rightV,rightV,rightV,rightV,rightV,
+            // 左侧面
+            leftV,leftV,leftV,leftV,leftV,leftV,
+            // 背面
+            backV,backV,backV,backV,backV,backV,
+            // 上面
+            upV,upV,upV,upV,upV,upV,
+            // 下面
+            downV,downV,downV,downV,downV,downV
+        };
+
+        if (LightingOn) {
+            // 初始化平行光颜色
+            //lightColor = new Color01(1,0.5f,0.5f, 1);
+            CalculateVerticsTangent(vertices, triangle);
+
+            // 给每个顶点引用一份MVP矩阵
+            foreach (int i in triangle) {
+                Vertex v = vertices[triangle[i]];
+                v.normal = normals[i];
+                v.mMatrix = modelMatrix;
+                v.vMatrix = viewMatrix;
+                v.pMatrix = projectionMatrix;
+            }
+
+        }
+
+        DrawElement(vertices, triangle, MVPMatrix);
+    }
+
     /// <summary>
     /// 绘制立方体
     /// </summary>
@@ -1348,6 +1436,7 @@ public class SoftRenderForm : Form {
 
         // 坐标/旋转与缩放
         angel = (angel + 1) % 720;
+        //angel = 0;
         Vector3 rotation = new Vector3(angel, angel, angel);
         Vector3 scale = new Vector3(1, 1, 1);
         Vector3 worldPosition = new Vector3(0, 0, 0);
@@ -1370,7 +1459,7 @@ public class SoftRenderForm : Form {
         // 从左上往右下照
         //DirectionLight = (targetPosition - cameraPostion) + new Vector3(0,2,0);
         DirectionLight = new Vector3(0,0,1);
-        Vector3 cameraRotation = new Vector3(angel,0,0);
+        Vector3 cameraRotation = new Vector3(lightAngle, 0,0);
         Matrix4x4 CameraRMatrix = GetRotateMatrix((int)cameraRotation.X, (int)cameraRotation.Y, (int)cameraRotation.Z);
         // 变换光源方向
         DirectionLight = CameraRMatrix * DirectionLight;
