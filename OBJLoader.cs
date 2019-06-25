@@ -23,7 +23,7 @@ namespace SortRenderWithCSharp {
         /// 根据OBJ文件的文件名来读取他
         /// </summary>
         /// <param name="fileName"></param>
-        public static void LoadOBJ(string fileName) {
+        public static Mesh LoadOBJ(string fileName) {
             List<Vertex> tVertex = new List<Vertex>();
             List<Vector3> tpos = new List<Vector3>();
             List<Vector3> tNormals = new List<Vector3>();
@@ -117,6 +117,8 @@ namespace SortRenderWithCSharp {
 
             vertices = tVertex.ToArray();
             triangles = ttriangles.ToArray();
+
+            return new Mesh(vertices,triangles,tNormals.ToArray());
         }
     }
 }

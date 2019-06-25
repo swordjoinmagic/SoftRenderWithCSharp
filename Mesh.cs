@@ -11,6 +11,15 @@ namespace SortRenderWithCSharp {
         public Vector3[] normals;
         public Vector3[] tangents;
 
+        public Mesh() { }
+        public Mesh(Vertex[] vertices,int[] triangles,Vector3[] normals) {
+            this.vertices = vertices;
+            this.triangles = triangles;
+            this.normals = normals;
+
+            CalculateVerticsTangent(vertices,triangles);
+        }
+
         /// <summary>
         /// 计算顶点数组中所有顶点的法线方向（正方向）
         /// 

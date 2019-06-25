@@ -46,9 +46,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Camera.cs" />
     <Compile Include="Color01.cs" />
     <Compile Include="Cube.cs" />
     <Compile Include="MathF.cs" />
+    <Compile Include="Matrix.cs" />
     <Compile Include="Matrix4x4.cs" />
     <Compile Include="Mesh.cs" />
     <Compile Include="OBJLoader.cs" />
@@ -65,6 +67,7 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="cubea.obj" />
+    <None Include="enemry_spaceship.obj" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
