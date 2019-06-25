@@ -92,6 +92,7 @@ public class SoftRenderForm : Form {
         // 读取OBJ文件
         //OBJLoader.LoadOBJ("../../cubea.obj");
         SpaceShip = OBJLoader.LoadOBJ("../../enemry_spaceship.obj");
+        cube = new Cube();
 
         StartRender();
     }
@@ -102,31 +103,45 @@ public class SoftRenderForm : Form {
 
     protected override void OnKeyDown(KeyEventArgs e) {
         base.OnKeyDown(e);
-        switch (e.KeyCode) {
-            case Keys.Right:
-                cameraPositionX += 0.01f;
-                break;
-            case Keys.Left:
-                cameraPositionX -= 0.01f;
-                break;
-            case Keys.Up:
-                cameraPositionY -= 0.01f;
-                break;
-            case Keys.Down:
-                cameraPositionY += 0.01f;
-                break;
-            case Keys.Z:
-                cameraPositionZ += 0.01f;
-                break;
-            case Keys.X:
-                cameraPositionZ -= 0.01f;
-                break;
-        }
+        Input.Instance.OperateKeybordEvent(e);
     }
 
-    protected override void OnMouseWheel(MouseEventArgs e) {
-        base.OnMouseWheel(e);
+    protected override void OnMouseDown(MouseEventArgs e) {
+        base.OnMouseDown(e);
+        Input.Instance.OperateMouseEvent(e);
+    }
 
+    private void UpdateInput() {
+
+        float cameraSpeed = 5.0f;
+
+        if (Input.Instance.isKeyDown && Input.Instance.isMouseDown) {
+            if (Input.Instance.mouseCode == MouseButtons.Right) {
+                switch (Input.Instance.keyCode) {
+                    case Keys.Left:
+                        camera.rotation.Y -= cameraSpeed * Time.deltaTime;
+                        break;
+                    case Keys.Right:
+                        camera.rotation.Y += cameraSpeed * Time.deltaTime;
+                        break;
+                }
+            }
+        }else if (Input.Instance.isKeyDown) {
+            switch (Input.Instance.keyCode) {
+                case Keys.Left:
+                    camera.position.X -= cameraSpeed * Time.deltaTime;
+                    break;
+                case Keys.Right:
+                    camera.position.X += cameraSpeed * Time.deltaTime;
+                    break;
+                case Keys.Up:
+                    camera.position.Z += cameraSpeed * Time.deltaTime;
+                    break;
+                case Keys.Down:
+                    camera.position.Z -= cameraSpeed * Time.deltaTime;
+                    break;
+            }
+        }
     }
 
     /// <summary>
@@ -170,6 +185,9 @@ public class SoftRenderForm : Form {
 
         Console.WriteLine("delta"+deltaTime);
 
+        if(lastUpdateTime!=0)
+            Time.deltaTime = deltaTime / 1000f;
+
         // 更新lastUpdateTime变量（即最后一次更新时间）
         lastUpdateTime = nowMs;
 
@@ -207,14 +225,20 @@ public class SoftRenderForm : Form {
             // 显示FPS
             ShowFPS();
 
+            // 更新输入
+            UpdateInput();
+
             #region 绘制区域
 
-            //DrawCube();
-            DrawSpaceShip();
+            DrawCube();
+            //DrawSpaceShip();
 
 
             #endregion
 
+
+            // 重置按钮
+            Input.Instance.Reset();
 
             // 交换缓冲，将后备缓冲交换到前置缓冲
             g.DrawImage(screenBuffer, 0, 0);
@@ -585,27 +609,31 @@ public class SoftRenderForm : Form {
     /// <param name="vertices"></param>
     /// <param name="triangle"></param>
     /// <param name="mvp"></param>
-    public void DrawElement(Vertex[] vertices,int[] triangle,Matrix4x4 mvp) {
-        if (triangle.Length % 3 != 0) return;
-        for (int i=0;i<triangle.Length;i+=3) {
-            Vertex v1 = vertices[triangle[i]];
-            Vertex v2 = vertices[triangle[i+1]];
-            Vertex v3 = vertices[triangle[i + 2]];
-
-            DrawPrimitive(v1,v2,v3,mvp);
-        }
-    }
-
-    public void DrawElement(Mesh mesh,Matrix4x4 mvp) {
+    /// <param name="drawMode">默认为连续三角形绘制</param>
+    public void DrawElement(Mesh mesh,Matrix4x4 mvp,SoftRenderDrawMode drawMode= SoftRenderDrawMode.Triangles) {
         int[] triangle = mesh.triangles;
         Vertex[] vertices = mesh.vertices;
         if (triangle.Length % 3 != 0) return;
-        for (int i = 0; i < triangle.Length; i += 3) {
-            Vertex v1 = vertices[triangle[i]];
-            Vertex v2 = vertices[triangle[i + 1]];
-            Vertex v3 = vertices[triangle[i + 2]];
 
-            DrawPrimitive(v1, v2, v3, mvp);
+        switch (drawMode) {
+            case SoftRenderDrawMode.Triangles:
+                for (int i = 0; i < triangle.Length; i += 3) {
+                    Vertex v1 = vertices[triangle[i]];
+                    Vertex v2 = vertices[triangle[i + 1]];
+                    Vertex v3 = vertices[triangle[i + 2]];
+
+                    DrawPrimitive(v1, v2, v3, mvp);
+                }
+                break;
+            case SoftRenderDrawMode.Triangles_FUN:
+                for (int i = 0; i+2 < triangle.Length; i += 1) {
+                    Vertex v1 = vertices[triangle[i]];
+                    Vertex v2 = vertices[triangle[i + 1]];
+                    Vertex v3 = vertices[triangle[i + 2]];
+
+                    DrawPrimitive(v1, v2, v3, mvp);
+                }
+                break;
         }
     }
     #endregion
@@ -648,6 +676,7 @@ public class SoftRenderForm : Form {
 
 
     Mesh SpaceShip;
+    Mesh cube;
     public void DrawSpaceShip() {
         Vector3 rotation = Vector3.Zero;
         Vector3 scale = Vector3.One;
@@ -670,7 +699,7 @@ public class SoftRenderForm : Form {
             v.pMatrix = projectionMatrix;
         }
 
-        DrawElement(SpaceShip, MVPMatrix);
+        DrawElement(SpaceShip, MVPMatrix,SoftRenderDrawMode.Triangles_FUN);
     }
 
     /// <summary>
@@ -694,7 +723,6 @@ public class SoftRenderForm : Form {
         // 构建MVP矩阵
         Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
-        Cube cube = new Cube();
         // 给每个顶点引用一份MVP矩阵
         foreach (int i in cube.triangles) {
             Vertex v = cube.vertices[i];

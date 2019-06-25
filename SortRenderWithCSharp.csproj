@@ -49,6 +49,8 @@
     <Compile Include="Camera.cs" />
     <Compile Include="Color01.cs" />
     <Compile Include="Cube.cs" />
+    <Compile Include="Input.cs" />
+    <Compile Include="SoftRenderDrawMode.cs" />
     <Compile Include="MathF.cs" />
     <Compile Include="Matrix.cs" />
     <Compile Include="Matrix4x4.cs" />
@@ -60,12 +62,14 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Texture.cs" />
+    <Compile Include="Time.cs" />
     <Compile Include="Vector2.cs" />
     <Compile Include="Vector3.cs" />
     <Compile Include="Vertex.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="cube.obj" />
     <None Include="cubea.obj" />
     <None Include="enemry_spaceship.obj" />
   </ItemGroup>
