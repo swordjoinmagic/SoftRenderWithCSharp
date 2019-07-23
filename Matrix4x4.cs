@@ -22,6 +22,19 @@ namespace SortRenderWithCSharp {
         }
 
         /// <summary>
+        /// 将当前矩阵转置
+        /// </summary>
+        public void Transpose() {
+            for (int i = 0; i < 4; i++) {
+                for (int j = i; j < 4; j++) {
+                    float temp = value[i, j];
+                    value[i, j] = value[j, i];
+                    value[j, i] = temp;
+                }
+            }
+        }
+
+        /// <summary>
         /// 矩阵乘法
         /// </summary>
         /// <param name="right"></param>

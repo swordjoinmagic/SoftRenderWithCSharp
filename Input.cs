@@ -34,6 +34,7 @@ namespace SortRenderWithCSharp {
         public void OperateMouseEvent(MouseEventArgs mouseEvent) {
             isMouseDown = true;
             mouseCode = mouseEvent.Button;
+            
         }
     }
 }

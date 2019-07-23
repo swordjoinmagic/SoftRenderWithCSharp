@@ -50,6 +50,10 @@
     <Compile Include="Color01.cs" />
     <Compile Include="Cube.cs" />
     <Compile Include="Input.cs" />
+    <Compile Include="Lights\DirectionalLight.cs" />
+    <Compile Include="Lights\Light.cs" />
+    <Compile Include="Lights\PointLight.cs" />
+    <Compile Include="Lights\SpotLight.cs" />
     <Compile Include="SoftRenderDrawMode.cs" />
     <Compile Include="MathF.cs" />
     <Compile Include="Matrix.cs" />
@@ -62,6 +66,8 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Texture.cs" />
+    <Compile Include="TextureMode\TextureFilterMode.cs" />
+    <Compile Include="TextureMode\TextureWrapMode.cs" />
     <Compile Include="Time.cs" />
     <Compile Include="Vector2.cs" />
     <Compile Include="Vector3.cs" />
@@ -70,8 +76,9 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="cube.obj" />
-    <None Include="cubea.obj" />
     <None Include="enemry_spaceship.obj" />
+    <None Include="lowPolySphere.obj" />
+    <None Include="sphere.obj" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

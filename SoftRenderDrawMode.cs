@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace SortRenderWithCSharp {
     public enum SoftRenderDrawMode {
         Triangles,
-        Triangles_FUN
+        Triangles_FUN,
+        TRIANGLE_STRIP
     }
 }

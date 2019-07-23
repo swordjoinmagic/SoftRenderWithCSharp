@@ -6,6 +6,16 @@ using System.Threading.Tasks;
 
 namespace SortRenderWithCSharp {
     public class Mesh {
+
+        #region 顶点的MVP矩阵，原则上来说，mesh不应该有这个属性，但是这里为了计算方便，引用一份它的MVP矩阵，方便光照计算
+
+        // 记录MVP矩阵的三个引用，这里记录的都是引用，所以不会特别消耗内存
+        public Matrix4x4 mMatrix;
+        public Matrix4x4 vMatrix;
+        public Matrix4x4 pMatrix;
+
+        #endregion
+
         public Vertex[] vertices;
         public int[] triangles;
         public Vector3[] normals;
@@ -15,7 +25,7 @@ namespace SortRenderWithCSharp {
         public Mesh(Vertex[] vertices,int[] triangles,Vector3[] normals) {
             this.vertices = vertices;
             this.triangles = triangles;
-            this.normals = normals;
+            this.normals = normals;                            
 
             CalculateVerticsTangent(vertices,triangles);
         }

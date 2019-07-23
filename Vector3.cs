@@ -148,6 +148,10 @@ namespace SortRenderWithCSharp {
             z /= magnitude;
         }
 
+        public Vector3 normlize {
+            get { this.Normlize();return this; }
+        }
+
         public static Vector3 LerpVector3(Vector3 left,Vector3 right,float t) {
             return left + (right - left) * t;
         }

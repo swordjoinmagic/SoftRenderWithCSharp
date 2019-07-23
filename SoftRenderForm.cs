@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
 using SortRenderWithCSharp;
+using SortRenderWithCSharp.TextureMode;
+using SortRenderWithCSharp.Lights;
 
 public class SoftRenderForm : Form {
     // 帧缓冲，后备缓冲区，用于双缓冲时将该后备缓冲区交换到前置缓冲区
@@ -34,9 +36,20 @@ public class SoftRenderForm : Form {
 
     // 是否开启光照渲染（同时也决定了是否对顶点的法线进行计算）
     bool LightingOn;
+
     // 平行光光源的方向，这里将默认方向设为从摄像机观察方向指向摄像机
-    Vector3 DirectionLight;
+    Vector3 MainLightDirection = new Vector3(1, 0, 0);
     Color01 lightColor = Color01.White; // 平行光颜色
+
+    // 光源集合
+    List<Light> lights = new List<Light>();
+    // 平行光
+    DirectionalLight directionalLight;
+    // 点光源
+    PointLight pointLight;
+    // 聚光灯
+    SpotLight spotLight;
+    
 
     // 屏幕宽高度（同时也作分辨率使用）
     private int screenHeight = 500, screenWidth = 500;
@@ -45,6 +58,9 @@ public class SoftRenderForm : Form {
     private Camera camera;
 
     private long lastUpdateTime;
+
+    // 当前绘制的mesh
+    private Mesh currentDrawMesh;
 
     /// <summary>
     /// 初始化
@@ -64,6 +80,13 @@ public class SoftRenderForm : Form {
         // 初始化深度缓冲区
         ZBuffer = new float[screenWidth+1,screenHeight+1];
 
+        // 初始化所有光源
+        //directionalLight = new DirectionalLight(MainLightDirection, Color01.White);
+        //lights.Add(directionalLight);
+        //pointLight = new PointLight(Vector3.Zero,7,new Color01(0,0,1f,1f));
+        //lights.Add(pointLight);
+        spotLight = new SpotLight(45,7f,new Vector3(0,0,1),new Color01(1,1,1,1),new Vector3(0,0,-3));
+        lights.Add(spotLight);
 
         // 开启深度测试
         IsZTest = true;
@@ -80,19 +103,17 @@ public class SoftRenderForm : Form {
         camera = new Camera();
 
         // 读取贴图
-        //texture2D = new Bitmap("D:\\C#Instance\\LerningRenderPiplineWithSoftRender\\SortRenderWithCSharp\\SortRenderWithCSharp\readmeImage\\29126173.bmp");
         texture2D = new Bitmap("C:\\Users\\Administrator\\Desktop\\29126173.bmp");
-        //texture2D = new Bitmap("D:\\UnityInstance\\资源\\Unity Shadeers Book Assert\\Unity_Shaders_Book-master\\Assets\\Textures\\Chapter7\\Grid.png");
 
         // 读取法线贴图
         normalTexture = new Bitmap(256, 256);
         //normalTexture = new Bitmap("D:\\UnityInstance\\Shader Collection\\Assets\\Textures\\Chapter7\\Brick_Normal.bmp");
-        //normalTexture = new Bitmap("D:\\C#Instance\\LerningRenderPiplineWithSoftRender\\SortRenderWithCSharp\\SortRenderWithCSharp\readmeImage\\distorition1.bmp");
 
         // 读取OBJ文件
-        //OBJLoader.LoadOBJ("../../cubea.obj");
         SpaceShip = OBJLoader.LoadOBJ("../../enemry_spaceship.obj");
+        //cube = OBJLoader.LoadOBJ("../../cube.obj");
         cube = new Cube();
+        sphere = OBJLoader.LoadOBJ("../../sphere.obj");
 
         StartRender();
     }
@@ -102,7 +123,7 @@ public class SoftRenderForm : Form {
     }
 
     protected override void OnKeyDown(KeyEventArgs e) {
-        base.OnKeyDown(e);
+        base.OnKeyDown(e);        
         Input.Instance.OperateKeybordEvent(e);
     }
 
@@ -113,32 +134,38 @@ public class SoftRenderForm : Form {
 
     private void UpdateInput() {
 
-        float cameraSpeed = 5.0f;
-
-        if (Input.Instance.isKeyDown && Input.Instance.isMouseDown) {
-            if (Input.Instance.mouseCode == MouseButtons.Right) {
-                switch (Input.Instance.keyCode) {
-                    case Keys.Left:
-                        camera.rotation.Y -= cameraSpeed * Time.deltaTime;
-                        break;
-                    case Keys.Right:
-                        camera.rotation.Y += cameraSpeed * Time.deltaTime;
-                        break;
-                }
-            }
-        }else if (Input.Instance.isKeyDown) {
+        float cameraSpeed = 2.0f;
+        if (Input.Instance.isKeyDown) {
             switch (Input.Instance.keyCode) {
                 case Keys.Left:
-                    camera.position.X -= cameraSpeed * Time.deltaTime;
+                    spotLight.position.X -= cameraSpeed * Time.deltaTime;
                     break;
                 case Keys.Right:
-                    camera.position.X += cameraSpeed * Time.deltaTime;
+                    spotLight.position.X += cameraSpeed * Time.deltaTime;
                     break;
                 case Keys.Up:
-                    camera.position.Z += cameraSpeed * Time.deltaTime;
+                    spotLight.position.Z += cameraSpeed * Time.deltaTime;
                     break;
                 case Keys.Down:
-                    camera.position.Z -= cameraSpeed * Time.deltaTime;
+                    spotLight.position.Z -= cameraSpeed * Time.deltaTime;
+                    break;
+                case Keys.W:
+                    camera.rotation.X += cameraSpeed * Time.deltaTime;
+                    break;
+                case Keys.S:
+                    camera.rotation.X -= cameraSpeed * Time.deltaTime;
+                    break;
+                case Keys.A:
+                    camera.rotation.Y -= cameraSpeed * Time.deltaTime;
+                    break;
+                case Keys.D:
+                    camera.rotation.Y += cameraSpeed * Time.deltaTime;
+                    break;
+                case Keys.Z:
+                    camera.rotation.Z += cameraSpeed * Time.deltaTime;
+                    break;
+                case Keys.X:
+                    camera.rotation.Z -= cameraSpeed * Time.deltaTime;
                     break;
             }
         }
@@ -194,7 +221,7 @@ public class SoftRenderForm : Form {
         // deltaTime表示ms转s，帧数表示1秒中内能更新几次
         float fps = (float)1 / ((float)deltaTime / 1000);
 
-        Console.WriteLine(String.Format("帧率: {0:G4} FPS", fps));
+        Console.WriteLine(String.Format("帧率: {0:G4} FPS", fps));        
         if (screenBufferGraphics != null)
             screenBufferGraphics.DrawString(String.Format("帧率: {0:G4} FPS", fps), new Font("Verdana", 12), new SolidBrush(Color.Red), new PointF(1.0f, 1.0f));
     }
@@ -213,9 +240,6 @@ public class SoftRenderForm : Form {
     }
 
     int angel = 0;
-    float cameraPositionX = 0;
-    float cameraPositionY = 0;
-    float cameraPositionZ = -10;
     // 每一帧渲染图形的方法
     public void Render(object sender, System.Timers.ElapsedEventArgs args) {
 
@@ -223,19 +247,19 @@ public class SoftRenderForm : Form {
             // 清空后置缓冲区
             ClearScreenBuffer();
             // 显示FPS
-            ShowFPS();
-
-            // 更新输入
-            UpdateInput();
+            ShowFPS();            
 
             #region 绘制区域
 
-            DrawCube();
+            //angel = (angel + 1)%180;
+            DrawMesh(cube,SoftRenderDrawMode.Triangles);
             //DrawSpaceShip();
-
+            //DrawMesh(sphere,Vector3.Zero,Vector3.One,new Vector3(angel,angel,angel),SoftRenderDrawMode.Triangles_FUN);
 
             #endregion
 
+            // 更新输入
+            UpdateInput();
 
             // 重置按钮
             Input.Instance.Reset();
@@ -313,9 +337,19 @@ public class SoftRenderForm : Form {
 
                 Color01 finalColor = textureColor*color;
 
-                if (fragmentShaderOn)
-                    DrawPixel(x, y, FragmentShader(vertex));
-                else
+                if (fragmentShaderOn) {
+
+                    // 对所有光源进行着色器计算,然后将所有光源的结果叠加起来
+                    // 即该片元的颜色由所有光源决定
+
+                    finalColor = Color01.Black;
+
+                    foreach (var light in lights) {
+                        finalColor += FragmentShader(vertex,light);
+                    }
+
+                    DrawPixel(x, y, finalColor);
+                } else
                     DrawPixel(x, y, finalColor);
 
                 // 增量误差
@@ -626,13 +660,30 @@ public class SoftRenderForm : Form {
                 }
                 break;
             case SoftRenderDrawMode.Triangles_FUN:
-                for (int i = 0; i+2 < triangle.Length; i += 1) {
-                    Vertex v1 = vertices[triangle[i]];
+                Vertex v_init = vertices[triangle[0]];
+                for (int i = 1; i < triangle.Length; i+=2) {
                     Vertex v2 = vertices[triangle[i + 1]];
                     Vertex v3 = vertices[triangle[i + 2]];
 
-                    DrawPrimitive(v1, v2, v3, mvp);
+                    DrawPrimitive(v_init, v2, v3, mvp);
                 }
+                break;
+            case SoftRenderDrawMode.TRIANGLE_STRIP:
+
+                Vertex vfirset = vertices[triangle[0]];
+                Vertex vsecond = vertices[triangle[1]];
+                Vertex vthird = vertices[triangle[2]];
+
+                DrawPrimitive(vfirset,vsecond,vthird,mvp);
+
+                for (int i=3;i<triangle.Length;i++) {
+                    Vertex v1 = vertices[triangle[i - 2]];
+                    Vertex v2 = vertices[triangle[i - 1]];
+                    Vertex v3 = vertices[triangle[i]];
+
+                    DrawPrimitive(v1,v2,v3,mvp);
+                }
+
                 break;
         }
     }
@@ -670,19 +721,13 @@ public class SoftRenderForm : Form {
     #endregion
 
     #region 绘制更多图元
-
-    int lightAngle;
-    public Vector3 cameraPostion;
-
-
     Mesh SpaceShip;
     Mesh cube;
-    public void DrawSpaceShip() {
-        Vector3 rotation = Vector3.Zero;
-        Vector3 scale = Vector3.One;
-        Vector3 worldPosition = Vector3.Zero;
+    Mesh sphere;
+
+    public void DrawMesh(Mesh mesh,Vector3 position,Vector3 scale,Vector3 rotation,SoftRenderDrawMode softRenderDrawMode) {
         // 构建M矩阵
-        Matrix4x4 modelMatrix = Matrix.GetModelMatrix(worldPosition, rotation, scale);
+        Matrix4x4 modelMatrix = Matrix.GetModelMatrix(position, rotation, scale);
         // 构建V矩阵
         Matrix4x4 viewMatrix = camera.GetViewMatrix();
         // 构建P矩阵
@@ -692,25 +737,31 @@ public class SoftRenderForm : Form {
         Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
         // 给每个顶点引用一份MVP矩阵
-        foreach (int i in SpaceShip.triangles) {
-            Vertex v = SpaceShip.vertices[i];
-            v.mMatrix = modelMatrix;
-            v.vMatrix = viewMatrix;
-            v.pMatrix = projectionMatrix;
-        }
+        //foreach (int i in mesh.triangles) {
+        //    Vertex v = mesh.vertices[i];
+        //    v.mMatrix = modelMatrix;
+        //    v.vMatrix = viewMatrix;
+        //    v.pMatrix = projectionMatrix;
+        //}
+        mesh.mMatrix = modelMatrix;
+        mesh.vMatrix = viewMatrix;
+        mesh.pMatrix = projectionMatrix;
 
-        DrawElement(SpaceShip, MVPMatrix,SoftRenderDrawMode.Triangles_FUN);
+
+        DrawElement(mesh, MVPMatrix,softRenderDrawMode);
     }
 
     /// <summary>
     /// 绘制立方体
     /// </summary>
-    public void DrawCube() {
+    public void DrawMesh(Mesh mesh,SoftRenderDrawMode drawMode=SoftRenderDrawMode.Triangles) {
+
+        currentDrawMesh = mesh;
 
         // 坐标/旋转与缩放
         angel = (angel + 1) % 720;
         Vector3 rotation = new Vector3(angel, angel, angel);
-        Vector3 scale = new Vector3(1, 1, 1);
+        Vector3 scale = new Vector3(1, 1, 1)*3;
         Vector3 worldPosition = new Vector3(0, 0, 0);
 
         // 构建M矩阵
@@ -723,59 +774,81 @@ public class SoftRenderForm : Form {
         // 构建MVP矩阵
         Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
-        // 给每个顶点引用一份MVP矩阵
-        foreach (int i in cube.triangles) {
-            Vertex v = cube.vertices[i];
-            v.mMatrix = modelMatrix;
-            v.vMatrix = viewMatrix;
-            v.pMatrix = projectionMatrix;
-        }
+        //// 给每个顶点引用一份MVP矩阵
+        //foreach (int i in mesh.triangles) {
+        //    Vertex v = mesh.vertices[i];
+        //    v.mMatrix = modelMatrix;
+        //    v.vMatrix = viewMatrix;
+        //    v.pMatrix = projectionMatrix;
+        //}
+        mesh.mMatrix = modelMatrix;
+        mesh.vMatrix = viewMatrix;
+        mesh.pMatrix = projectionMatrix;
+        
 
-        DrawElement(cube, MVPMatrix);
+        DrawElement(mesh, MVPMatrix,drawMode);
     }
 
     #region 光照模型
+
+    /// <summary>
+    /// 基于Phong光照模型的光照
+    /// </summary>
+    /// <param name="vertex"></param>
+    /// <returns></returns>
+    public Color01 LightingWithPhong(Vertex vertex) {
+        return Color01.White;
+    }
 
     /// <summary>
     /// 基于半兰伯特光照模型的光照
     /// </summary>
     /// <param name="vertex"></param>
     /// <returns></returns>
-    public Color01 LightingWithLambert(Vertex vertex) {
+    public Color01 LightingWithLambert(Vertex vertex,Mesh mesh,Light light) {
         // 将顶点的法线变换到世界空间下，对于一个只包含旋转变换的变换矩阵，他是正交矩阵
         // 使用m矩阵变换法线(仅适用于只发生旋转的物体)
-        Vector3 worldNormal = vertex.mMatrix * vertex.normal;
+        Vector3 worldNormal = mesh.mMatrix * vertex.normal;
         worldNormal.Normlize();
+
+        // 获得顶点当前所在世界坐标
+        Vector3 worldPos = mesh.mMatrix * vertex.modelSpacePos;
 
         // 根据平行光方向及当前法线方向，
         // 计算当前像素的辐照度
+        Vector3 lightDirection = light.GetDirection(worldPos);
 
         // 使用半兰伯特表达式计算辐照度
-        float radiance = Vector3.Dot(worldNormal, DirectionLight) * 0.5f + 0.5f;
+        float radiance = Vector3.Dot(worldNormal, lightDirection) * 0.5f + 0.5f;
+
         // 获得贴图颜色
-        Color01 albedo = Texture.Tex2D(texture2D, vertex.u, vertex.v);
+        //Color01 albedo = Texture.Tex2D(texture2D, vertex.u, vertex.v);
+        Color01 albedo = Color01.White;
 
         // 使用Blinn-Phong模型计算高光反射
 
-        // 获得顶点当前所在世界坐标
-        Vector3 worldPos = vertex.mMatrix * vertex.modelSpacePos;
-
         // 获得世界坐标下的视角方向
-        Vector3 worldViewDir = cameraPostion - worldPos;
+        Vector3 worldViewDir = camera.position - worldPos;
 
         // 计算half向量
-        Vector3 h = (worldViewDir + DirectionLight);
+        Vector3 h = (worldViewDir + lightDirection);
         h.Normlize();
 
         // 光泽度
-        float gloss = 20f;
+        float gloss = 32f;
+
+        float spec = Math.Max(0, Vector3.Dot(h, worldNormal));
 
         // 计算高光反射
-        Color01 specular = lightColor * (float)Math.Pow(Math.Max(0, Vector3.Dot(h, worldNormal)), gloss);
+        Color01 specular = lightColor * (float)Math.Pow(spec, gloss);
         // 计算漫反射光照
-        Color01 diffuse = albedo * radiance * lightColor;
+        Color01 diffuse = albedo * radiance * light.lightColor;
 
-        Color01 finalColor = diffuse;
+        Color01 finalColor = diffuse+specular;
+
+        // 计算光源衰减
+        finalColor *= light.GetAtten(worldPos);
+
         finalColor.A = 1;
 
         return finalColor;
@@ -786,7 +859,7 @@ public class SoftRenderForm : Form {
     /// </summary>
     /// <param name="vertex"></param>
     /// <returns></returns>
-    public Color01 NormalMappingWithLambert(Vertex vertex) {
+    public Color01 NormalMappingWithLambert(Vertex vertex,Mesh mesh,Light light) {
         // 从法线贴图中取出法线(切线空间下的)
         Color01 UndecryptedNormal = Texture.Tex2D(normalTexture, vertex.u, vertex.v);
         // 把法线从[0,1]区间变回到[-1,1]区间
@@ -797,10 +870,10 @@ public class SoftRenderForm : Form {
             );
 
         // 获得世界坐标下的法线
-        Vector3 worldNormal = vertex.mMatrix * vertex.normal;
+        Vector3 worldNormal = mesh.mMatrix * vertex.normal;
         worldNormal.Normlize();
         // 获得世界坐标下的切线
-        Vector3 worldTangent = vertex.mMatrix * vertex.tangent;
+        Vector3 worldTangent = mesh.mMatrix * vertex.tangent;
         worldTangent.Normlize();
         // 获得世界坐标下的副切线
         Vector3 worldBinormal = Vector3.Cross(worldNormal, worldTangent) * vertex.tangent.W;
@@ -833,7 +906,9 @@ public class SoftRenderForm : Form {
 
         Color01 albedo = Texture.Tex2D(texture2D, vertex.u, vertex.v) * vertex.color;
 
-        float radiance = Vector3.Dot(normal, DirectionLight) * 0.5f + 0.5f;
+        Vector3 worldPos = mesh.mMatrix * vertex.modelSpacePos;
+
+        float radiance = Vector3.Dot(normal, light.GetDirection(worldPos)) * 0.5f + 0.5f;
 
         Color01 diffuse = albedo * radiance;
 
@@ -847,7 +922,7 @@ public class SoftRenderForm : Form {
     /// <param name="vertex"></param>
     /// <returns></returns>
     public Color01 TextureMapping(Vertex vertex) {
-        return Texture.Tex2D(texture2D,vertex.u,vertex.v);
+        return Texture.Tex2D(texture2D,vertex.u,vertex.v,TextureFilterMode.Bilinear,TextureWrapMode.Clamp);
     }
 
     /// <summary>
@@ -865,11 +940,12 @@ public class SoftRenderForm : Form {
     /// 根据一个顶点的各属性，计算当前顶点（屏幕空间下）的像素的颜色
     /// </summary>
     /// <param name="vertex"></param>
+    /// <param name="light"></param>
     /// <returns></returns>
-    public Color01 FragmentShader(Vertex vertex) {
+    public Color01 FragmentShader(Vertex vertex,Light light) {
 
         // 基于半兰伯特光照模型的光照
-        //return LightingWithLambert(vertex);
+        return LightingWithLambert(vertex, currentDrawMesh,light);
         // 法线映射
         //return NormalMappingWithLambert(vertex);
         // 纹理映射
@@ -877,7 +953,7 @@ public class SoftRenderForm : Form {
         // 顶点色
         //return VertexColorMapping(vertex);
 
-        return Color01.White;
+        //return Color01.White;
     }
 
 

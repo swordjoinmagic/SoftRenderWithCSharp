@@ -11,7 +11,7 @@ namespace SortRenderWithCSharp {
         Vector3 forwardDir = new Vector3(0,0,1);
 
         public Vector3 position = new Vector3(0,0,-10);
-        public Vector3 rotation;
+        public Vector3 rotation = new Vector3(0,0,0);
         int Near = 1;       // 距离近裁剪平面距离
         int Far = 10;       // 距离远裁剪平面距离
         int top = 1;        // 近平面中心距离上边的距离

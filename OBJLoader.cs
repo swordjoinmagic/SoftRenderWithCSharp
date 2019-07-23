@@ -13,12 +13,12 @@ namespace SortRenderWithCSharp {
     /// 将其的法线序列放到normals数组中，
     /// 将其的顶点索引序列放到triangle中，
     /// 最后再根据它的uv索引和法线索引给这个顶点赋值
+    /// 
+    /// PS:
+    ///     1个顶点可能同时在obj文件中对应多个纹理坐标和法线(这是因为使用顶点索引复用顶点造成的),
+    ///     这时该顶点的纹理坐标和法线等于该顶点所邻接的所有三角面的纹理坐标和法线的均值
     /// </summary>
     public class OBJLoader {
-
-        public static Vertex[] vertices;
-        public static int[] triangles;
-
         /// <summary>
         /// 根据OBJ文件的文件名来读取他
         /// </summary>
@@ -84,7 +84,7 @@ namespace SortRenderWithCSharp {
 
                         for (int i = 1; i < 4; i++) {
                             string[] ps = param[i].Split('/');
-
+                            if (ps.Length != 3) continue;
                             // 需要注意的是输入的索引是从1开始的,这里要将其-1
 
                             // 顶点索引
@@ -114,11 +114,7 @@ namespace SortRenderWithCSharp {
 
             }
 
-
-            vertices = tVertex.ToArray();
-            triangles = ttriangles.ToArray();
-
-            return new Mesh(vertices,triangles,tNormals.ToArray());
+            return new Mesh(tVertex.ToArray(), ttriangles.ToArray(), tNormals.ToArray());
         }
     }
 }

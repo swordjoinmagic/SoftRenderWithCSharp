@@ -7,6 +7,16 @@ using System.Threading.Tasks;
 
 namespace SortRenderWithCSharp {
     class MathF {
+
+        /// <summary>
+        /// 返回x的小数部分
+        /// </summary>
+        /// <param name="x"></param>
+        /// <returns></returns>
+        public static float Frac(float x) {
+            return x-(int)(x);
+        }
+
         /// <summary>
         /// 快速平方根
         /// </summary>

@@ -10,14 +10,6 @@ namespace SortRenderWithCSharp {
     /// 顶点对象
     /// </summary>
     public class Vertex {
-        #region 顶点的MVP矩阵，原则上来说，顶点不应该有这个属性，但是这里为了计算方便，每个顶点都有引用一份它的MVP矩阵，方便光照计算
-
-        // 记录MVP矩阵的三个引用，这里记录的都是引用，所以不会特别消耗内存
-        public Matrix4x4 mMatrix;
-        public Matrix4x4 vMatrix;
-        public Matrix4x4 pMatrix;
-
-        #endregion
 
         // 模型空间下的坐标
         public Vector3 modelSpacePos;
@@ -61,14 +53,7 @@ namespace SortRenderWithCSharp {
             result.normal = Vector3.LerpVector3(left.normal,right.normal,t);
 
             // 对切线进行插值
-            result.tangent = Vector3.LerpVector3(left.tangent,right.tangent,t);
-
-            // MVP矩阵
-            result.mMatrix = left.mMatrix;
-            result.vMatrix = left.vMatrix;
-            result.pMatrix = left.pMatrix;
-
-            
+            result.tangent = Vector3.LerpVector3(left.tangent,right.tangent,t);            
 
             return result;
         }
@@ -86,12 +71,11 @@ namespace SortRenderWithCSharp {
             result.pos.X = pos.X;
             result.pos.Y = pos.Y;
             result.pos.W = pos.W; 
-            // 对z值进行插值
+            
             result.pos.Z = pos.Z;
-            // 对颜色属性进行插值
+            
             result.color = color;
-            // 对uv进行插值(此处插值不正确,对于投影变换
-            // 需进行 透视插值矫正)
+
             result.u = u;
             result.v = v;
 
@@ -100,11 +84,6 @@ namespace SortRenderWithCSharp {
 
             // 对切线进行插值
             result.tangent = tangent;
-
-            // MVP矩阵
-            result.mMatrix = mMatrix;
-            result.vMatrix = vMatrix;
-            result.pMatrix = pMatrix;
 
             return result;
         }

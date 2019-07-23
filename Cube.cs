@@ -143,6 +143,10 @@ namespace SortRenderWithCSharp {
             };
 
             CalculateVerticsTangent(vertices,triangles);
+
+            foreach (int i in triangles) {
+                vertices[i].normal = normals[i];
+            }
         }
     }
 }
