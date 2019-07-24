@@ -84,12 +84,12 @@ public class SoftRenderForm : Form {
         ZBuffer = new float[screenWidth+1,screenHeight+1];
 
         // 初始化所有光源
-        //directionalLight = new DirectionalLight(MainLightDirection, Color01.White);
-        //lights.Add(directionalLight);
+        directionalLight = new DirectionalLight(MainLightDirection, Color01.White);
+        lights.Add(directionalLight);
         //pointLight = new PointLight(Vector3.Zero, 7, new Color01(0, 0, 1f, 1f));
         //lights.Add(pointLight);
-        spotLight = new SpotLight(15f, 7f, new Vector3(0, 0, 1), new Color01(1, 1, 1, 1), new Vector3(0, 0, -3));
-        lights.Add(spotLight);
+        //spotLight = new SpotLight(15f, 7f, new Vector3(0, 0, 1), new Color01(1, 1, 1, 1), new Vector3(0, 0, -3));
+        //lights.Add(spotLight);
 
         // 开启深度测试
         IsZTest = true;
@@ -114,8 +114,8 @@ public class SoftRenderForm : Form {
 
         // 读取OBJ文件
         SpaceShip = OBJLoader.LoadOBJ("../../enemry_spaceship.obj");
-        //cube = OBJLoader.LoadOBJ("../../cube2.obj");
-        cube = new Cube();
+        cube = OBJLoader.LoadOBJ("../../cube.obj");
+        //cube = new Cube();
         sphere = OBJLoader.LoadOBJ("../../sphere.obj");
 
         StartRender();
@@ -255,7 +255,7 @@ public class SoftRenderForm : Form {
             #region 绘制区域
 
             //angel = (angel + 1)%180;
-            DrawMesh(cube,SoftRenderDrawMode.Triangles);
+            DrawMesh(sphere,SoftRenderDrawMode.Triangles);
             //DrawSpaceShip();
             //DrawMesh(sphere,Vector3.Zero,Vector3.One,new Vector3(angel,angel,angel),SoftRenderDrawMode.Triangles_FUN);
 
@@ -818,7 +818,7 @@ public class SoftRenderForm : Form {
         // 坐标/旋转与缩放
         angel = (angel + 1) % 720;
         Vector3 rotation = new Vector3(angel, angel, angel);
-        Vector3 scale = new Vector3(1, 1, 1)*2;
+        Vector3 scale = new Vector3(1, 1, 1);
         Vector3 worldPosition = new Vector3(0, 0, 0);
 
         // 构建M矩阵

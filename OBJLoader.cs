@@ -30,6 +30,11 @@ namespace SortRenderWithCSharp {
             List<Vector2> tuvs = new List<Vector2>();
             List<int> ttriangles = new List<int>();
 
+            // 存储多点共面的法线,key是该顶点的triangle值,即该顶点在vertex数组的下标值,value是该vertex所共面的所有法线
+            Dictionary<int, List<Vector3>> differentNormals = new Dictionary<int, List<Vector3>>();
+            // 存储多点共面的uv
+            Dictionary<int, List<Vector2>> differentUvs = new Dictionary<int, List<Vector2>>();
+
             StreamReader reader = new StreamReader(fileName);
             string line;
             string[] param;
@@ -78,7 +83,6 @@ namespace SortRenderWithCSharp {
                         // 表示读取的是一个三角面
                         // 这个三角面的格式如下:
                         // f Vertex1/Texture1/Normal1 Vertex2/Texture2/Normal2 Vertex3/Texture3/Normal3
-
                         
                         param = line.Split(' ');
 
@@ -100,9 +104,15 @@ namespace SortRenderWithCSharp {
                             // 设置法线
                             v.normal = tNormals[normalIndex];
 
+                            if (!differentNormals.ContainsKey(triangle)) differentNormals[triangle] = new List<Vector3>();
+                            differentNormals[triangle].Add(tNormals[normalIndex]);
+
                             // 设置uv
                             v.u = tuvs[uvIndex].u;
                             v.v = tuvs[uvIndex].v;
+
+                            if (!differentUvs.ContainsKey(triangle)) differentUvs[triangle] = new List<Vector2>();
+                            differentUvs[triangle].Add(tuvs[uvIndex]);
 
                             // 添加进索引中
                             ttriangles.Add(triangle);
@@ -110,6 +120,25 @@ namespace SortRenderWithCSharp {
                         }
 
                         break;
+                }
+
+                foreach (int triangle in differentNormals.Keys) {
+                    Vertex vertex = tVertex[triangle];
+
+                    Vector3 normal = Vector3.Zero;
+                    foreach (Vector3 n in differentNormals[triangle]) normal += n;
+                    normal /= differentNormals[triangle].Count;
+
+                    Vector2 uv = new Vector2(0,0);
+                    foreach (Vector2 tuv in differentUvs[triangle]) {
+                        uv.u += tuv.u;
+                        uv.v += tuv.v;
+                    }
+                    uv.u /= differentUvs[triangle].Count; uv.v /= differentUvs[triangle].Count;
+
+                    vertex.normal = normal;
+                    vertex.u = uv.u;
+                    vertex.v = uv.v;
                 }
 
             }
