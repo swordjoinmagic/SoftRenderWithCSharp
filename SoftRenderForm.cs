@@ -49,7 +49,10 @@ public class SoftRenderForm : Form {
     PointLight pointLight;
     // 聚光灯
     SpotLight spotLight;
-    
+
+    // 是否开启面剔除功能
+    bool cullingFaceOn = false;
+    CullingFaceMode cullingFaceMode = CullingFaceMode.Back;
 
     // 屏幕宽高度（同时也作分辨率使用）
     private int screenHeight = 500, screenWidth = 500;
@@ -83,9 +86,9 @@ public class SoftRenderForm : Form {
         // 初始化所有光源
         //directionalLight = new DirectionalLight(MainLightDirection, Color01.White);
         //lights.Add(directionalLight);
-        //pointLight = new PointLight(Vector3.Zero,7,new Color01(0,0,1f,1f));
+        //pointLight = new PointLight(Vector3.Zero, 7, new Color01(0, 0, 1f, 1f));
         //lights.Add(pointLight);
-        spotLight = new SpotLight(45,7f,new Vector3(0,0,1),new Color01(1,1,1,1),new Vector3(0,0,-3));
+        spotLight = new SpotLight(15f, 7f, new Vector3(0, 0, 1), new Color01(1, 1, 1, 1), new Vector3(0, 0, -3));
         lights.Add(spotLight);
 
         // 开启深度测试
@@ -111,7 +114,7 @@ public class SoftRenderForm : Form {
 
         // 读取OBJ文件
         SpaceShip = OBJLoader.LoadOBJ("../../enemry_spaceship.obj");
-        //cube = OBJLoader.LoadOBJ("../../cube.obj");
+        //cube = OBJLoader.LoadOBJ("../../cube2.obj");
         cube = new Cube();
         sphere = OBJLoader.LoadOBJ("../../sphere.obj");
 
@@ -134,7 +137,7 @@ public class SoftRenderForm : Form {
 
     private void UpdateInput() {
 
-        float cameraSpeed = 2.0f;
+        float cameraSpeed = 5.0f;
         if (Input.Instance.isKeyDown) {
             switch (Input.Instance.keyCode) {
                 case Keys.Left:
@@ -613,11 +616,27 @@ public class SoftRenderForm : Form {
     /// <param name="v1"></param>
     /// <param name="v2"></param>
     /// <param name="v3"></param>
-    public void DrawPrimitive(Vertex v1,Vertex v2,Vertex v3,Matrix4x4 mvp) {
+    public void DrawPrimitive(Vertex v1,Vertex v2,Vertex v3,Matrix4x4 mMatrix,Matrix4x4 vMatrix,Matrix4x4 pMatrix) {
         // 将各顶点作为列矩阵进行MVP变换
-        v1.pos = mvp * v1.modelSpacePos;
-        v2.pos = mvp * v2.modelSpacePos;
-        v3.pos = mvp * v3.modelSpacePos;
+        //v1.pos = mvp * v1.modelSpacePos;
+        //v2.pos = mvp * v2.modelSpacePos;
+        //v3.pos = mvp * v3.modelSpacePos;
+
+        // 先将顶点变换到观察空间下
+        Matrix4x4 mvMatrix = vMatrix * mMatrix;
+        v1.pos = mvMatrix * v1.modelSpacePos;
+        v2.pos = mvMatrix * v2.modelSpacePos;
+        v3.pos = mvMatrix * v3.modelSpacePos;
+
+        // 判断是否通过面剔除
+        if (!FaceCulling(v1,v2,v3) && cullingFaceOn) {
+            return;
+        }
+
+        // 将所有顶点变换到裁剪空间下
+        v1.pos = pMatrix * v1.pos;
+        v2.pos = pMatrix * v2.pos;
+        v3.pos = pMatrix * v3.pos;
 
         // 判断有顶点是否应该被裁剪
         if (CVVCutting(v1.pos) ||
@@ -644,7 +663,7 @@ public class SoftRenderForm : Form {
     /// <param name="triangle"></param>
     /// <param name="mvp"></param>
     /// <param name="drawMode">默认为连续三角形绘制</param>
-    public void DrawElement(Mesh mesh,Matrix4x4 mvp,SoftRenderDrawMode drawMode= SoftRenderDrawMode.Triangles) {
+    public void DrawElement(Mesh mesh, Matrix4x4 mMatrix, Matrix4x4 vMatrix, Matrix4x4 pMatrix, SoftRenderDrawMode drawMode= SoftRenderDrawMode.Triangles) {
         int[] triangle = mesh.triangles;
         Vertex[] vertices = mesh.vertices;
         if (triangle.Length % 3 != 0) return;
@@ -656,16 +675,16 @@ public class SoftRenderForm : Form {
                     Vertex v2 = vertices[triangle[i + 1]];
                     Vertex v3 = vertices[triangle[i + 2]];
 
-                    DrawPrimitive(v1, v2, v3, mvp);
+                    DrawPrimitive(v1, v2, v3, mMatrix,vMatrix,pMatrix);
                 }
                 break;
             case SoftRenderDrawMode.Triangles_FUN:
                 Vertex v_init = vertices[triangle[0]];
-                for (int i = 1; i < triangle.Length; i+=2) {
-                    Vertex v2 = vertices[triangle[i + 1]];
-                    Vertex v3 = vertices[triangle[i + 2]];
+                for (int i = 1; i+1 < triangle.Length; i+=2) {
+                    Vertex v2 = vertices[triangle[i]];
+                    Vertex v3 = vertices[triangle[i + 1]];
 
-                    DrawPrimitive(v_init, v2, v3, mvp);
+                    DrawPrimitive(v_init, v2, v3, mMatrix, vMatrix, pMatrix);
                 }
                 break;
             case SoftRenderDrawMode.TRIANGLE_STRIP:
@@ -674,14 +693,14 @@ public class SoftRenderForm : Form {
                 Vertex vsecond = vertices[triangle[1]];
                 Vertex vthird = vertices[triangle[2]];
 
-                DrawPrimitive(vfirset,vsecond,vthird,mvp);
+                DrawPrimitive(vfirset,vsecond,vthird, mMatrix, vMatrix, pMatrix);
 
                 for (int i=3;i<triangle.Length;i++) {
                     Vertex v1 = vertices[triangle[i - 2]];
                     Vertex v2 = vertices[triangle[i - 1]];
                     Vertex v3 = vertices[triangle[i]];
 
-                    DrawPrimitive(v1,v2,v3,mvp);
+                    DrawPrimitive(v1,v2,v3, mMatrix, vMatrix, pMatrix);
                 }
 
                 break;
@@ -720,6 +739,44 @@ public class SoftRenderForm : Form {
 
     #endregion
 
+
+    #region 面剔除测试
+
+    public bool FaceCulling(Vertex v1,Vertex v2,Vertex v3) {
+        // v2指向v1的向量
+        Vector3 p1 = v2.pos - v1.pos;
+        // v3指向v1的向量
+        Vector3 p2 = v3.pos - v2.pos;
+
+        // 获得p1和p2的叉积
+        Vector3 normal = Vector3.Cross(p1,p2);
+
+        // 获得视空间内从顶点望向观察方向的向量
+        Vector3 viewDir = -v1.pos + Vector3.Zero;
+
+        // 如果该叉积结果和观察方向一致,那么说明该面面朝摄像机,即为逆时针,
+        // 否则说明该面背朝摄像机,为顺时针
+        switch (cullingFaceMode) {
+            case CullingFaceMode.Back:
+                if (Vector3.Dot(normal, viewDir) > 0) {
+                    return true;
+                }
+                break;
+            case CullingFaceMode.Front:
+                if (Vector3.Dot(normal, viewDir) < 0) {
+                    return true;
+                }
+                break;
+            case CullingFaceMode.All:
+                return true;
+        }
+
+
+        return false;
+    }
+
+    #endregion
+
     #region 绘制更多图元
     Mesh SpaceShip;
     Mesh cube;
@@ -734,7 +791,7 @@ public class SoftRenderForm : Form {
         Matrix4x4 projectionMatrix = camera.GetProjectionMatrix();
 
         // 构建MVP矩阵
-        Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
+        //Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
         // 给每个顶点引用一份MVP矩阵
         //foreach (int i in mesh.triangles) {
@@ -748,7 +805,7 @@ public class SoftRenderForm : Form {
         mesh.pMatrix = projectionMatrix;
 
 
-        DrawElement(mesh, MVPMatrix,softRenderDrawMode);
+        DrawElement(mesh, modelMatrix,viewMatrix,projectionMatrix,softRenderDrawMode);
     }
 
     /// <summary>
@@ -761,7 +818,7 @@ public class SoftRenderForm : Form {
         // 坐标/旋转与缩放
         angel = (angel + 1) % 720;
         Vector3 rotation = new Vector3(angel, angel, angel);
-        Vector3 scale = new Vector3(1, 1, 1)*3;
+        Vector3 scale = new Vector3(1, 1, 1)*2;
         Vector3 worldPosition = new Vector3(0, 0, 0);
 
         // 构建M矩阵
@@ -772,7 +829,7 @@ public class SoftRenderForm : Form {
         Matrix4x4 projectionMatrix = camera.GetProjectionMatrix();
 
         // 构建MVP矩阵
-        Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
+        //Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
         //// 给每个顶点引用一份MVP矩阵
         //foreach (int i in mesh.triangles) {
@@ -786,7 +843,7 @@ public class SoftRenderForm : Form {
         mesh.pMatrix = projectionMatrix;
         
 
-        DrawElement(mesh, MVPMatrix,drawMode);
+        DrawElement(mesh, modelMatrix, viewMatrix, projectionMatrix, drawMode);
     }
 
     #region 光照模型

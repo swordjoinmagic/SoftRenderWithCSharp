@@ -49,6 +49,7 @@
     <Compile Include="Camera.cs" />
     <Compile Include="Color01.cs" />
     <Compile Include="Cube.cs" />
+    <Compile Include="CullingFaceMode.cs" />
     <Compile Include="Input.cs" />
     <Compile Include="Lights\DirectionalLight.cs" />
     <Compile Include="Lights\Light.cs" />

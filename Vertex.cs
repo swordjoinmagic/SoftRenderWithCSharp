@@ -40,6 +40,7 @@ namespace SortRenderWithCSharp {
         public static Vertex LerpVertexData(Vertex left,Vertex right,float t) {
             Vertex result = new Vertex();
 
+            result.modelSpacePos = Vector3.LerpVector3(left.modelSpacePos,right.modelSpacePos,t); 
             // 对z值进行插值
             result.pos.Z = MathF.LerpFloat(left.pos.Z,right.pos.Z,t);
             // 对颜色属性进行插值

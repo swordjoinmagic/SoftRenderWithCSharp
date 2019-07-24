@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 namespace SortRenderWithCSharp {
     class MathF {
 
+        public static float Deg2Rad = (float)(Math.PI/180f);
+
         /// <summary>
         /// 返回x的小数部分
         /// </summary>

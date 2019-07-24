@@ -29,11 +29,13 @@ namespace SortRenderWithCSharp.Lights {
 
         public SpotLight(float outerAngle,float innerAngle, Vector3 spotDir,Color01 lightColor,Vector3 position) {
             this.outerAngle = outerAngle;
-            this.cosPhi = (float)Math.Cos(outerAngle);
+            this.cosPhi = (float)Math.Cos(outerAngle * MathF.Deg2Rad);
             this.spotDir = spotDir;
 
+            
+
             this.innerAngle = innerAngle;
-            this.cosInnerAngle = (float)Math.Cos(innerAngle);
+            this.cosInnerAngle = (float)Math.Cos(innerAngle * MathF.Deg2Rad);
 
             this.lightColor = lightColor;
 
@@ -41,21 +43,15 @@ namespace SortRenderWithCSharp.Lights {
         }
 
         public override float GetAtten(Vector3 targetPosition) {
-            //// LightDir和SpotDir的夹角(cos),也就是当前片元距离
-            //float theta = Vector3.Dot(GetDirection(targetPosition),spotDir);
-            //// Epsilon是内外圆锥的余弦差值
-            //float epsilon = cosInnerAngle - cosPhi;
-            //// 聚光灯强度
-            //float intensity = MathF.Clamp01((theta-cosPhi)/epsilon);
-
-            //return intensity;
 
             // θ,片元指向光源的方向与聚光灯朝向的夹角(cos)
             float cosTheta = Vector3.Dot(-GetDirection(targetPosition).normlize,spotDir.normlize);
-            if (cosTheta > cosPhi) {
-                return 1;
-            } else
-                return 0;
+            // Epsilon是内外圆锥的余弦差值
+            float epsilon = cosInnerAngle - cosPhi;
+            // 聚光灯强度
+            float intensity = MathF.Clamp01((cosTheta - cosPhi) / epsilon);
+
+            return intensity;
         }
     }
 }
