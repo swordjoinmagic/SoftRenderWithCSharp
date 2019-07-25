@@ -121,26 +121,25 @@ namespace SortRenderWithCSharp {
 
                         break;
                 }
+            }
 
-                foreach (int triangle in differentNormals.Keys) {
-                    Vertex vertex = tVertex[triangle];
+            foreach (int triangle in differentNormals.Keys) {
+                Vertex vertex = tVertex[triangle];
 
-                    Vector3 normal = Vector3.Zero;
-                    foreach (Vector3 n in differentNormals[triangle]) normal += n;
-                    normal /= differentNormals[triangle].Count;
+                Vector3 normal = Vector3.Zero;
+                foreach (Vector3 n in differentNormals[triangle]) normal += n;
+                normal /= differentNormals[triangle].Count;
 
-                    Vector2 uv = new Vector2(0,0);
-                    foreach (Vector2 tuv in differentUvs[triangle]) {
-                        uv.u += tuv.u;
-                        uv.v += tuv.v;
-                    }
-                    uv.u /= differentUvs[triangle].Count; uv.v /= differentUvs[triangle].Count;
-
-                    vertex.normal = normal;
-                    vertex.u = uv.u;
-                    vertex.v = uv.v;
+                Vector2 uv = new Vector2(0, 0);
+                foreach (Vector2 tuv in differentUvs[triangle]) {
+                    uv.u += tuv.u;
+                    uv.v += tuv.v;
                 }
+                uv.u /= differentUvs[triangle].Count; uv.v /= differentUvs[triangle].Count;
 
+                vertex.normal = normal;
+                vertex.u = uv.u;
+                vertex.v = uv.v;
             }
 
             return new Mesh(tVertex.ToArray(), ttriangles.ToArray(), tNormals.ToArray());

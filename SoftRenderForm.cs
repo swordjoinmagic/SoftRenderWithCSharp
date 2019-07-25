@@ -51,7 +51,7 @@ public class SoftRenderForm : Form {
     SpotLight spotLight;
 
     // 是否开启面剔除功能
-    bool cullingFaceOn = false;
+    bool cullingFaceOn = true;
     CullingFaceMode cullingFaceMode = CullingFaceMode.Back;
 
     // 屏幕宽高度（同时也作分辨率使用）
@@ -86,10 +86,10 @@ public class SoftRenderForm : Form {
         // 初始化所有光源
         directionalLight = new DirectionalLight(MainLightDirection, Color01.White);
         lights.Add(directionalLight);
-        //pointLight = new PointLight(Vector3.Zero, 7, new Color01(0, 0, 1f, 1f));
-        //lights.Add(pointLight);
-        //spotLight = new SpotLight(15f, 7f, new Vector3(0, 0, 1), new Color01(1, 1, 1, 1), new Vector3(0, 0, -3));
-        //lights.Add(spotLight);
+        pointLight = new PointLight(Vector3.Zero, 7, new Color01(0, 0, 1f, 1f));
+        lights.Add(pointLight);
+        spotLight = new SpotLight(15f, 7f, new Vector3(0, 0, 1), new Color01(1, 0, 0, 1), new Vector3(0, 0, -3));
+        lights.Add(spotLight);
 
         // 开启深度测试
         IsZTest = true;
@@ -255,7 +255,7 @@ public class SoftRenderForm : Form {
             #region 绘制区域
 
             //angel = (angel + 1)%180;
-            DrawMesh(sphere,SoftRenderDrawMode.Triangles);
+            DrawMesh(cube,SoftRenderDrawMode.Triangles);
             //DrawSpaceShip();
             //DrawMesh(sphere,Vector3.Zero,Vector3.One,new Vector3(angel,angel,angel),SoftRenderDrawMode.Triangles_FUN);
 
@@ -818,7 +818,7 @@ public class SoftRenderForm : Form {
         // 坐标/旋转与缩放
         angel = (angel + 1) % 720;
         Vector3 rotation = new Vector3(angel, angel, angel);
-        Vector3 scale = new Vector3(1, 1, 1);
+        Vector3 scale = new Vector3(1, 1, 1)*0.5f;
         Vector3 worldPosition = new Vector3(0, 0, 0);
 
         // 构建M矩阵
@@ -979,7 +979,7 @@ public class SoftRenderForm : Form {
     /// <param name="vertex"></param>
     /// <returns></returns>
     public Color01 TextureMapping(Vertex vertex) {
-        return Texture.Tex2D(texture2D,vertex.u,vertex.v,TextureFilterMode.Bilinear,TextureWrapMode.Clamp);
+        return Texture.Tex2D(texture2D,vertex.u,vertex.v,TextureFilterMode.Point,TextureWrapMode.Clamp);
     }
 
     /// <summary>
@@ -1002,7 +1002,7 @@ public class SoftRenderForm : Form {
     public Color01 FragmentShader(Vertex vertex,Light light) {
 
         // 基于半兰伯特光照模型的光照
-        return LightingWithLambert(vertex, currentDrawMesh,light);
+        return LightingWithLambert(vertex, currentDrawMesh, light);
         // 法线映射
         //return NormalMappingWithLambert(vertex);
         // 纹理映射
