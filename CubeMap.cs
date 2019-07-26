@@ -22,6 +22,24 @@ namespace SortRenderWithCSharp {
         public Bitmap[] Textures { get => textures; set => textures = value; }
         public Plane[] Planes { get => planes; set => planes = value; }
 
+        public CubeMap(Bitmap frontTexture,Bitmap backTexture, Bitmap leftTexture, Bitmap rightTexture,Bitmap topTexture,Bitmap bottomTexture) {
+            // 初始化立方体的六个平面
+            Plane front = new Plane(new Vector3(0,0,-1),new Vector3(-1,-1,-1));
+            Plane back = new Plane(new Vector3(0,0,1),new Vector3(-1,-1,1));
+            Plane left = new Plane(new Vector3(-1,0,0),new Vector3(-1,-1,-1));
+            Plane right = new Plane(new Vector3(1,0,0),new Vector3(1,-1,-1));
+            Plane top = new Plane(new Vector3(0,1,0),new Vector3(-1,1,-1));
+            Plane bottom = new Plane(new Vector3(0,-1,0),new Vector3(-1,-1,-1));
+
+            planes = new Plane[]{
+                front,back,left,right,top,bottom    
+            };
+
+            Textures = new Bitmap[] {
+                frontTexture,backTexture,leftTexture,rightTexture,topTexture,bottomTexture
+            };
+        }
+
         /// <summary>
         /// 根据一个从立方体中心出发的方向向量来对立方体纹理进行采样,
         /// 该方向向量必须为归一化的向量
@@ -38,9 +56,29 @@ namespace SortRenderWithCSharp {
             for (int i=0;i<6;i++) {
                 Plane plane = cubeMap.Planes[i];
 
+                float u, v = 0;
+
                 // 如果相交,那么根据交点进行采样
                 if (Ray.GetIntersectionPoint(ray, plane, out Vector3 point)) {
-
+                    switch (i) {
+                        case 0:
+                        case 1:
+                            // front、back,即xy空间
+                            u = point.X * 0.5f + 0.5f;
+                            v = point.Y * 0.5f + 0.5f;
+                            return Texture.Tex2D(cubeMap.Textures[i],u,v);
+                        case 2:
+                            // left、right，即yz平面
+                            u = point.Z * 0.5f + 0.5f;
+                            v = point.Y * 0.5f + 0.5f;
+                            return Texture.Tex2D(cubeMap.Textures[i], u, v);
+                        case 4:
+                        case 5:
+                            // top、bottom,即xz平面
+                            u = point.X * 0.5f + 0.5f;
+                            v = point.Z * 0.5f + 0.5f;
+                            return Texture.Tex2D(cubeMap.Textures[i], u, v);
+                    }
                 }
             }
 

@@ -206,13 +206,13 @@ namespace SortRenderWithCSharp {
         /// <param name="bottom">近裁剪平面距离下边的距离</param>
         /// <returns></returns>
         public static Matrix4x4 GetProjectionMatrixWithFrustum(
-            int angle,
-            int near, int far,
-            int right, int left,
-            int top, int bottom) {
+            float angle,
+            float near, float far,
+            float right, float left,
+            float top, float bottom) {
 
             // 角度转弧度
-            float FOVRadian = angle * 3.1415926f / 180f;
+            float FOVRadian = (float)(angle * Math.PI / 180f);
 
             // 初始化矩阵
             Matrix4x4 matrix = new Matrix4x4();

@@ -65,6 +65,11 @@ public class SoftRenderForm : Form {
     // 当前绘制的mesh
     private Mesh currentDrawMesh;
 
+    // 天空盒
+    private CubeMap skyBox;
+    private Mesh skyBoxMesh;
+    private bool drawingSkyBox = false;
+
     /// <summary>
     /// 初始化
     /// </summary>
@@ -77,7 +82,7 @@ public class SoftRenderForm : Form {
         g = this.CreateGraphics();
 
         // 初始化屏幕缓冲区
-        screenBuffer = new Bitmap(screenWidth, screenHeight);
+        screenBuffer = new Bitmap(screenWidth+1, screenHeight+1);
         screenBufferGraphics = Graphics.FromImage(screenBuffer);
 
         // 初始化深度缓冲区
@@ -86,10 +91,10 @@ public class SoftRenderForm : Form {
         // 初始化所有光源
         directionalLight = new DirectionalLight(MainLightDirection, Color01.White);
         lights.Add(directionalLight);
-        pointLight = new PointLight(Vector3.Zero, 7, new Color01(0, 0, 1f, 1f));
-        lights.Add(pointLight);
-        spotLight = new SpotLight(15f, 7f, new Vector3(0, 0, 1), new Color01(1, 0, 0, 1), new Vector3(0, 0, -3));
-        lights.Add(spotLight);
+        //pointLight = new PointLight(Vector3.Zero, 7, new Color01(0, 0, 1f, 1f));
+        //lights.Add(pointLight);
+        //spotLight = new SpotLight(15f, 7f, new Vector3(0, 0, 1), new Color01(1, 0, 0, 1), new Vector3(0, 0, -3));
+        //lights.Add(spotLight);
 
         // 开启深度测试
         IsZTest = true;
@@ -117,6 +122,23 @@ public class SoftRenderForm : Form {
         cube = OBJLoader.LoadOBJ("../../cube.obj");
         //cube = new Cube();
         sphere = OBJLoader.LoadOBJ("../../sphere.obj");
+        skyBoxMesh = cube;
+
+        // 初始化天空盒
+        skyBox = new CubeMap(
+            // front
+            new Bitmap("../../frontImage.png"),
+            // back
+            new Bitmap("../../backImage.png"),
+            // left
+            new Bitmap("../../leftImage.png"),
+            // right
+            new Bitmap("../../rightImage.png"),
+            // top
+            new Bitmap("../../upImage.png"),
+            // bottom
+            new Bitmap("../../downImage.png")
+        );
 
         StartRender();
     }
@@ -250,12 +272,19 @@ public class SoftRenderForm : Form {
             // 清空后置缓冲区
             ClearScreenBuffer();
             // 显示FPS
-            ShowFPS();            
+            ShowFPS();
 
             #region 绘制区域
 
+            // 先绘制天空盒
+            cullingFaceOn = false;
+            drawingSkyBox = true;
+            DrawSkyBox();
+            drawingSkyBox = false;
+            cullingFaceOn = true;
+
             //angel = (angel + 1)%180;
-            DrawMesh(cube,SoftRenderDrawMode.Triangles);
+            //DrawMesh(cube,SoftRenderDrawMode.Triangles);
             //DrawSpaceShip();
             //DrawMesh(sphere,Vector3.Zero,Vector3.One,new Vector3(angel,angel,angel),SoftRenderDrawMode.Triangles_FUN);
 
@@ -311,8 +340,8 @@ public class SoftRenderForm : Form {
             // 当x轴距离差更大时,将x作为自增变量
             for (int x = x1; x != x2; x += stepX) {
 
-                float t = (float)(x - x1) / (float)(x2 - x1);      
-                
+                float t = (float)(x - x1) / (float)(x2 - x1);
+
                 // 当前顶点
                 Vertex vertex = Vertex.LerpVertexData(v1, v2, t);
                 vertex.pos.X = x;
@@ -338,9 +367,12 @@ public class SoftRenderForm : Form {
                 // 对纹理贴图进行采样
                 Color01 textureColor = Texture.Tex2D(texture2D, u, v);
 
-                Color01 finalColor = textureColor*color;
+                Color01 finalColor = textureColor * color;
 
-                if (fragmentShaderOn) {
+                if (drawingSkyBox) {
+                    finalColor = CubeMap.TexCube(skyBox,vertex.modelSpacePos);
+                    DrawPixel(x, y, finalColor);
+                } else if (fragmentShaderOn) {
 
                     // 对所有光源进行着色器计算,然后将所有光源的结果叠加起来
                     // 即该片元的颜色由所有光源决定
@@ -609,7 +641,6 @@ public class SoftRenderForm : Form {
         return vertex;
     }
 
-
     /// <summary>
     /// 在屏幕上绘制一个三角形图元
     /// </summary>
@@ -781,6 +812,47 @@ public class SoftRenderForm : Form {
     Mesh SpaceShip;
     Mesh cube;
     Mesh sphere;
+
+    /// <summary>
+    /// 绘制天空盒需要特殊处理
+    /// </summary>
+    public void DrawSkyBox() {
+        currentDrawMesh = skyBoxMesh;
+
+        // 天空盒的顶点坐标即为世界坐标,无需进行变换
+        Matrix4x4 modelMatrix = Matrix.GetScaleMatrix(1,1,1);
+        // 构建V矩阵
+        Matrix4x4 viewMatrix = Matrix.GetScaleMatrix(1,1,1);
+        //Matrix4x4 viewMatrix = camera.GetViewMatrix();
+        //Vector3 tempForwardDir = Matrix.GetRotateMatrix(camera.rotation.X, camera.rotation.Y, camera.rotation.Z) * camera.forwardDir;
+        //return Matrix.GetViewMatrix(position, position + tempForwardDir, upDir);
+        //Matrix4x4 viewMatrix = Matrix.GetViewMatrix(Vector3.Zero, Vector3.Zero + tempForwardDir, camera.upDir);
+        // 取消观察矩阵的位移,即将观察矩阵第四列置空
+        //for (int i = 0; i < 3; i++) viewMatrix.value[i, 3] = 0;
+
+
+
+        // 构建P矩阵
+        //Matrix4x4 projectionMatrix = camera.GetProjectionMatrix();
+        Matrix4x4 projectionMatrix = Matrix.GetScaleMatrix(1,1,1);
+
+        // 构建MVP矩阵
+        //Matrix4x4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
+
+        //// 给每个顶点引用一份MVP矩阵
+        //foreach (int i in mesh.triangles) {
+        //    Vertex v = mesh.vertices[i];
+        //    v.mMatrix = modelMatrix;
+        //    v.vMatrix = viewMatrix;
+        //    v.pMatrix = projectionMatrix;
+        //}
+        currentDrawMesh.mMatrix = modelMatrix;
+        currentDrawMesh.vMatrix = viewMatrix;
+        currentDrawMesh.pMatrix = projectionMatrix;
+
+
+        DrawElement(currentDrawMesh, modelMatrix, viewMatrix, projectionMatrix);
+    }
 
     public void DrawMesh(Mesh mesh,Vector3 position,Vector3 scale,Vector3 rotation,SoftRenderDrawMode softRenderDrawMode) {
         // 构建M矩阵

@@ -84,5 +84,13 @@
     <None Include="lowPolySphere.obj" />
     <None Include="sphere.obj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="backImage.png" />
+    <Content Include="downImage.png" />
+    <Content Include="frontImage.png" />
+    <Content Include="leftImage.png" />
+    <Content Include="rightImage.png" />
+    <Content Include="upImage.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

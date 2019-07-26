@@ -49,7 +49,20 @@ namespace SortRenderWithCSharp {
         /// <param name="plane"></param>
         /// <returns></returns>
         public static bool GetIntersectionPoint(Ray ray,Plane plane,out Vector3 point) {
-            float t = (Vector3.Dot(plane.Normal,plane.Point)-Vector3.Dot(plane.Normal,ray.initPos)) / Vector3.Dot(plane.Normal, ray.direction);
+            point = Vector3.Zero;
+
+            // 当射线方向与平面法线垂直时,射线与平面平行,无交点
+            if (Vector3.Dot(plane.Normal, ray.Direction) == 0) return false;
+
+            float a = Vector3.Dot(plane.Normal, plane.Point);
+            float b = Vector3.Dot(plane.Normal, ray.initPos);
+            float c = Vector3.Dot(plane.Normal, ray.direction);
+
+            float t = ( Vector3.Dot(plane.Normal,plane.Point) - Vector3.Dot(plane.Normal,ray.initPos) ) / Vector3.Dot(plane.Normal, ray.direction);
+
+            // 当交点为方向向量反向方向时，设为无交点
+            // 当长度t大于射线长度range,无交点
+            if (t < 0 || t > ray.Range) return false;
 
             point = ray.initPos + ray.direction * t;
             return true;

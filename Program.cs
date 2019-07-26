@@ -11,10 +11,9 @@ namespace SortRenderWithCSharp {
         /// </summary>
         [STAThread]
         static void Main() {
-
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new SoftRenderForm());           
+            Application.Run(new SoftRenderForm());
         }
     }
 }
